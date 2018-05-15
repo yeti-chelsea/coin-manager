@@ -102,13 +102,6 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
     '''
     Http Server for handling imcoming request
     '''
-#    @constant
-#    def USERNAME():
-#        return "rgowda"
-#
-#    @constant
-#    def PASSWD():
-#        return "sandvine^123"
 
     USERNAME = None
     PASSWD = None
