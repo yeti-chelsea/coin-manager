@@ -8,6 +8,7 @@ import json
 import os
 import getopt
 import sys
+import time
 from copy import deepcopy
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import paramiko
@@ -108,11 +109,18 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
     BLR_TEST_MACHINE = "blrlab-test-2"
     WTL_TEST_MACHINE = "wtllab-test-10"
 
+    PREVIOUS_TIME_STAMP_BLR = 0
+    PREVIOUS_TIME_STAMP_WTL = 0
+    ACK_MESSAGE = "Acked\n"
     # GET
     def do_GET(self): # pylint: disable=invalid-name
         '''
         Do Get method impelemented
         '''
+        # Get the current time stamp
+        current_time_stamp = int(time.time())
+
+        kill_screen = 0
         # Get the length of the message
         msg_len = int(self.headers['Content-Length'])
 
@@ -136,10 +144,26 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
 
         if loc == "blr":
             h_name = HTTPServerRequestHandler.BLR_TEST_MACHINE
+
+            L_LOGGER_FILE.debug("Current time, Previous blr time, diffrence ", \
+                    current_time_stamp, HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_BLR, \
+                    (current_time_stamp - HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_BLR))
+            if (current_time_stamp - \
+                    HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_BLR) > 1800:
+                kill_screen = 1
+
+            HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_BLR = current_time_stamp
         elif loc == "wtl":
             h_name = HTTPServerRequestHandler.WTL_TEST_MACHINE
+            L_LOGGER_FILE.debug("Current time, Previous wtl time, diffrence ", \
+                    current_time_stamp, HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_WTL, \
+                    (current_time_stamp - HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_WTL))
+
+            if (current_time_stamp - HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_WTL) > 1800:
+                kill_screen = 1
+            HTTPServerRequestHandler.PREVIOUS_TIME_STAMP_WTL = current_time_stamp
         else:
-            # Log error and return
+            L_LOGGER_FILE.error("Unknow location received")
             return
 
         L_LOGGER_FILE.debug("Creating SshConnection object")
@@ -150,14 +174,17 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         L_LOGGER_FILE.info("Connecting to remote server : ", h_name)
         ssh_c.connect()
 
+        if kill_screen == 1:
+            L_LOGGER_FILE.debug("Sending kilall screen command")
+            ssh_c.execute_cmd("killall screen")
+
         L_LOGGER_FILE.debug("Executing remote command and exiting")
         ssh_c.execute_cmd_and_exit(cmd)
 
         L_LOGGER_FILE.debug("Sending Ack back to the client : ", \
                 self.client_address)
-        message = "Acked\n"
         # Write content as utf-8 data
-        self.wfile.write(bytes(message, "utf8"))
+        self.wfile.write(bytes(HTTPServerRequestHandler.ACK_MESSAGE, "utf8"))
         return
 
 def run(port_number):
