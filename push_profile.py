@@ -160,16 +160,16 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         self.wfile.write(bytes(message, "utf8"))
         return
 
-def run():
+def run(port_number):
     '''
     Main Run method
     '''
-    print('starting server...')
+    L_LOGGER_FILE.info('starting server...')
 
     # Server settings
-    server_address = ('0.0.0.0', 8081)
+    server_address = ('0.0.0.0', port_number)
     httpd = HTTPServer(server_address, HTTPServerRequestHandler)
-    print('running server...')
+    L_LOGGER_FILE.debug('running server...')
     httpd.serve_forever()
 
 def usage():
@@ -180,12 +180,13 @@ def usage():
             -h --help : display help message \n\
             -u --username : Username to ssh \n\
             -p --password : password of the user \n\
+            -n --port : port number to bind \n\
             -l --logfile : log file to log\n")
     sys.exit()
 
 try:
-    OPTS, ARGS = getopt.getopt(sys.argv[1:], "hu:p:l:", ["help", "username=", \
-        "password=", "logfile="])
+    OPTS, ARGS = getopt.getopt(sys.argv[1:], "hu:p:l:n:", ["help", "username=", \
+        "password=", "logfile=", "port="])
 except getopt.GetoptError as err:
     print(err)
     usage()
@@ -194,6 +195,7 @@ except getopt.GetoptError as err:
 U_NAME = None
 P_WD = None
 LOG_FILE = None
+PORT_NUMBER = 8081
 
 for opt, value in OPTS:
     if opt in ("-u", "--username"):
@@ -202,6 +204,8 @@ for opt, value in OPTS:
         P_WD = value
     elif opt in ("-l", "--logfile"):
         LOG_FILE = value
+    elif opt in ("-n", "--port"):
+        PORT_NUMBER = value
     elif opt in ("-h", "--help"):
         usage()
     else:
@@ -214,4 +218,4 @@ HTTPServerRequestHandler.USERNAME = U_NAME
 HTTPServerRequestHandler.PASSWD = P_WD
 
 L_LOGGER_FILE = Logger("Profile-Push", LOG_FILE)
-run()
+run(int(PORT_NUMBER))
