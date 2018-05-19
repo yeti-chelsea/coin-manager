@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 '''
 UDP client thread and socket
 '''
@@ -6,6 +6,12 @@ UDP client thread and socket
 import socket
 import sys
 import threading
+from log_manager import Logger
+
+HELLO_MSG = "Hello"
+ACK_HELLO_MSG = "Ack-Hello"
+KEEP_ALIVE = "Keep-Alive"
+SEND_BASIC = "Send-Basic"
 
 class UdpSocket(object):
     '''
@@ -50,7 +56,7 @@ class UdpClientThread(threading.Thread):
         # Initial Basic info initiated by client
 
         self._logger_ref.debug("Sending Basic info")
-        bytes_sent = self._udp_client_interface.udp_send("Hello")
+        bytes_sent = self._udp_client_interface.udp_send(HELLO_MSG)
 
         if bytes_sent < 1:
             self._logger_ref.critical("Failed to send packet, server might not be running")
@@ -76,11 +82,11 @@ class UdpClientThread(threading.Thread):
 
                 self._logger_ref.debug("Recevied message : ", actual_data)
 
-                if actual_data == "keep-alive":
+                if actual_data == KEEP_ALIVE:
                     self._logger_ref.debug("Responding to keep alive.")
                     self._udp_client_interface.udp_send("i-m-alive")
 
-                elif actual_data == "send-basic":
+                elif actual_data == SEND_BASIC:
                     self._logger_ref.debug("Resending basic info")
                     bytes_sent = self._udp_client_interface.udp_send("Hello")
                     if bytes_sent < 1:
@@ -88,8 +94,16 @@ class UdpClientThread(threading.Thread):
                             critical("Failed to send packet, server might not be running")
                         sys.exit(1)
 
-                elif actual_data == "ack-hello":
+                elif actual_data == ACK_HELLO_MSG:
                     self._logger_ref.debug("Waiting for server to send the request")
 
                 else:
                     self._logger_ref.warning("Unknown message received.")
+
+'''
+Testing
+L_LOGGER = Logger("Ranjith", "stdout")
+SERVER_ADD = ("localhost", 6767)
+UDPCLIENT_MANAGER = UdpClientThread(SERVER_ADD, L_LOGGER)
+UDPCLIENT_MANAGER.start()
+'''
