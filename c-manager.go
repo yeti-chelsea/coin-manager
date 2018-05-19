@@ -6,7 +6,6 @@ import (
 	"os"
 	"io"
 	"strings"
-	"net"
 	"./cmanager"
 )
 
@@ -86,7 +85,7 @@ func main() {
 		ListenPort: cmd_ln.udpServerPortNumber,
 		ConnRef: nil,
 		Log_ref: &logger,
-		MapOfMiners: make(map[net.UDPAddr.IP]chan string),
+		MapOfMiners: make(map[string]chan string),
 	}
 
 	logger.Info("Initalizing UDP server")

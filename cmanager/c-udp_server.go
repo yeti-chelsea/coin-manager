@@ -19,7 +19,7 @@ type UdpServer struct {
 
 	ConnRef *net.UDPConn
 	Log_ref *Logger
-	MapOfMiners map[net.IP]chan string
+	MapOfMiners map[string]chan string
 }
 
 func (udp *UdpServer) Init() error {
@@ -44,7 +44,7 @@ func (udp *UdpServer) ManageClientsMessages(clientAddr <-chan *net.UDPAddr) {
 
 	for {
 		client_addr := <-clientAddr
-		chl_data := <-udp.MapOfMiners[client_addr.IP]
+		chl_data := <-udp.MapOfMiners[client_addr.String()]
 		udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
 
 		_,err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
@@ -79,13 +79,13 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 
 			udp.Log_ref.Debug("Lenth of map : ", len(udp.MapOfMiners))
 			// Check whether this client is already registered with us 
-			client_ch, found := udp.MapOfMiners[client_addr.IP]
+			client_ch, found := udp.MapOfMiners[client_addr.String()]
 
 			if ! found {
 				udp.Log_ref.Info("Registering new client : ", client_addr)
 				udp.Log_ref.Debug("Creating new channel for this client")
-				udp.MapOfMiners[client_addr.IP] = make (chan string, 1)
-				client_ch = udp.MapOfMiners[client_addr.IP]
+				udp.MapOfMiners[client_addr.String()] = make (chan string, 1)
+				client_ch = udp.MapOfMiners[client_addr.String()]
 			}
 
 			udp.Log_ref.Debug(udp.MapOfMiners)
