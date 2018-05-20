@@ -95,6 +95,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer udpServer.ConnRef.Close()
+
 	logger.Debug("Starting UDP server")
 	udpServer.Start(channels[0])
 

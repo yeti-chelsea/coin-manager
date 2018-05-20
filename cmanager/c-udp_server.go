@@ -3,6 +3,7 @@ package cmanager
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 const listenIp string = "0.0.0.0"
@@ -53,11 +54,70 @@ func (udp *UdpServer) ManageClientsMessages(clientAddr <-chan *net.UDPAddr) {
 			udp.Log_ref.Error(err)
 		}
 	}
+}
 
+func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
+
+	client_addr := <-clientAddr
+	udp.Log_ref.Info("Launching a ghoper for client : ", client_addr.String())
+	chl_data := <-udp.MapOfMiners[client_addr.String()]
+	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
+
+	_,err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
+	if err != nil {
+		udp.Log_ref.Error(err)
+	}
+
+	time.Sleep(3 * time.Second)
+	var consecutiveKeepAliveTimeout int
+	var consecutiveFailures int
+	var breakout bool = false
+	for {
+
+		udp.Log_ref.Debug("Sending keep alive message to : ", client_addr.String())
+		_,err := udp.ConnRef.WriteToUDP([]byte(KEEP_ALIVE), client_addr)
+		if err != nil {
+			udp.Log_ref.Error(err)
+			consecutiveFailures = consecutiveFailures + 1
+			if consecutiveFailures == 3 {
+				udp.Log_ref.Warning("Consequtive send failures.. quitting !!!")
+				break
+			}
+		}
+		consecutiveFailures = 0
+
+		udp.Log_ref.Debug("Waiting for response from client : ", client_addr.String())
+		select {
+			case chl_data := <-udp.MapOfMiners[client_addr.String()] :
+				udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", chl_data, client_addr.String()))
+				consecutiveKeepAliveTimeout = 0
+				time.Sleep(4 * time.Second)
+			case <-time.After(1 * time.Second):
+				udp.Log_ref.Debug("Did not recieve response for keep-alive for 1 second")
+				consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
+				if consecutiveKeepAliveTimeout == 3 {
+					udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
+					breakout = true
+					break
+				}
+				time.Sleep(2 * time.Second)
+				/*
+			default:
+				udp.Log_ref.Warning("Unknown")
+				time.Sleep(4 * time.Second)
+				*/
+		}
+
+		if breakout {
+			break
+		}
+	}
+
+	delete (udp.MapOfMiners, client_addr.String())
+	udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
 }
 
 func (udp *UdpServer) Start(doneChannel chan<- bool) {
-	//defer udp.ConnRef.Close()
 
 	udp.Log_ref.Debug("Creating another channel cl_channel")
 	cl_channel := make(chan *net.UDPAddr, 1)
@@ -77,7 +137,6 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 			data := string(buf[0:bytes_read])
 			udp.Log_ref.Debug("Recieved data ")
 
-			udp.Log_ref.Debug("Lenth of map : ", len(udp.MapOfMiners))
 			// Check whether this client is already registered with us 
 			client_ch, found := udp.MapOfMiners[client_addr.String()]
 
@@ -86,15 +145,13 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 				udp.Log_ref.Debug("Creating new channel for this client")
 				udp.MapOfMiners[client_addr.String()] = make (chan string, 1)
 				client_ch = udp.MapOfMiners[client_addr.String()]
+				go udp.UdpClientGhoper(cl_channel)
+				cl_channel<- client_addr
 			}
 
-			udp.Log_ref.Debug(udp.MapOfMiners)
-
 			client_ch<- data
-			cl_channel<- client_addr
 		}
 	}()
 
-	go udp.ManageClientsMessages(cl_channel)
 	doneChannel<- true
 }
