@@ -15,6 +15,15 @@ const (
 	SEND_BASIC string = "Send-Basic"
 )
 
+const (
+	CONSEQUTIVE_KEEP_ALIVE_TIMEOUT int = 3
+	CONSEQUTIVE_SEND_FAILURES int = 3
+	SLEEP_TIME_BEFORE_INTERACTING_INSEC int = 2
+	TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC int = 4
+	KEEP_ALIVE_SEND_TIMEOUT_INSEC int = 1
+	SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT int = 2
+)
+
 type UdpServer struct {
 	ListenPort int
 
@@ -41,21 +50,6 @@ func (udp *UdpServer) Init() error {
 	return nil
 }
 
-func (udp *UdpServer) ManageClientsMessages(clientAddr <-chan *net.UDPAddr) {
-
-	for {
-		client_addr := <-clientAddr
-		chl_data := <-udp.MapOfMiners[client_addr.String()]
-		udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
-
-		_,err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
-
-		if err != nil {
-			udp.Log_ref.Error(err)
-		}
-	}
-}
-
 func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 	client_addr := <-clientAddr
@@ -68,7 +62,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		udp.Log_ref.Error(err)
 	}
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 	var consecutiveKeepAliveTimeout int
 	var consecutiveFailures int
 	var breakout bool = false
@@ -79,10 +73,12 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		if err != nil {
 			udp.Log_ref.Error(err)
 			consecutiveFailures = consecutiveFailures + 1
-			if consecutiveFailures == 3 {
+			if consecutiveFailures == CONSEQUTIVE_SEND_FAILURES {
 				udp.Log_ref.Warning("Consequtive send failures.. quitting !!!")
 				break
 			}
+			time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
+			continue
 		}
 		consecutiveFailures = 0
 
@@ -91,21 +87,16 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 			case chl_data := <-udp.MapOfMiners[client_addr.String()] :
 				udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", chl_data, client_addr.String()))
 				consecutiveKeepAliveTimeout = 0
-				time.Sleep(4 * time.Second)
-			case <-time.After(1 * time.Second):
+				time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
+			case <-time.After(time.Duration(KEEP_ALIVE_SEND_TIMEOUT_INSEC) * time.Second):
 				udp.Log_ref.Debug("Did not recieve response for keep-alive for 1 second")
 				consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
-				if consecutiveKeepAliveTimeout == 3 {
+				if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
 					udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
 					breakout = true
 					break
 				}
-				time.Sleep(2 * time.Second)
-				/*
-			default:
-				udp.Log_ref.Warning("Unknown")
-				time.Sleep(4 * time.Second)
-				*/
+				time.Sleep(time.Duration(SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT) * time.Second)
 		}
 
 		if breakout {
