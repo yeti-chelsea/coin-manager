@@ -25,11 +25,20 @@ const (
 )
 
 type UdpServer struct {
+	// Port Number in which this UDP server will be listening
 	ListenPort int
 
+	// Pointer to connection interface
 	ConnRef *net.UDPConn
+
+	// Pointer/reference to the logger interface
 	Log_ref *Logger
+
+	// Map of all the registered miners
 	MapOfMiners map[string]chan string
+
+	// A flag denoting running status
+	Running bool
 }
 
 func (udp *UdpServer) Init() error {
@@ -63,10 +72,10 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	}
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
-	var consecutiveKeepAliveTimeout int
-	var consecutiveFailures int
+	var consecutiveKeepAliveTimeout int = 0
+	var consecutiveFailures int = 0
 	var breakout bool = false
-	for {
+	for udp.Running == true {
 
 		udp.Log_ref.Debug("Sending keep alive message to : ", client_addr.String())
 		_,err := udp.ConnRef.WriteToUDP([]byte(KEEP_ALIVE), client_addr)
@@ -116,7 +125,7 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 	buf := make([]byte, 1024)
 	// Start the UDP server
 	go func() {
-		for {
+		for udp.Running == true {
 			udp.Log_ref.Debug("Waiting for messages in a while loop")
 			bytes_read, client_addr, err := udp.ConnRef.ReadFromUDP(buf)
 			if err != nil {

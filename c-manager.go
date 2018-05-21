@@ -6,6 +6,8 @@ import (
 	"os"
 	"io"
 	"strings"
+	"os/signal"
+	"syscall"
 	"./cmanager"
 )
 
@@ -47,6 +49,21 @@ func (cArgs *CommandLineArgs) ValidateArguments() {
 	fmt.Println("Log Level : ", cArgs.logLevel)
 }
 
+func InitSignals() {
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigs
+		fmt.Println("Received signal : ",sig)
+
+		// TODO:This is a temporary implementation, ideally this should
+		// shutdown all the servers running
+		os.Exit(0)
+	}()
+}
+
 func main() {
 
 	cmd_ln := CommandLineArgs{}
@@ -72,6 +89,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger.Debug("Initalizing signals")
+	InitSignals()
+
 	logger.Debug("Starting Coin manager")
 
 	var channels [2]chan bool
@@ -86,6 +106,7 @@ func main() {
 		ConnRef: nil,
 		Log_ref: &logger,
 		MapOfMiners: make(map[string]chan string),
+		Running: true,
 	}
 
 	logger.Info("Initalizing UDP server")
