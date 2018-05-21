@@ -105,7 +105,7 @@ func main() {
 		ListenPort: cmd_ln.udpServerPortNumber,
 		ConnRef: nil,
 		Log_ref: &logger,
-		MapOfMiners: make(map[string]chan string),
+		MapOfMiners: make(map[string]*cmanager.MinerStack),
 		Running: true,
 	}
 

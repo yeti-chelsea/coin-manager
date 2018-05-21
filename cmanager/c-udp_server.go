@@ -24,6 +24,17 @@ const (
 	SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT int = 2
 )
 
+type MinerStack struct {
+	// Data receieved from specific client
+	ClientDataChannel chan string
+
+	// List of miner daemons supported
+	MinerDaemons []string
+
+	// List of supported coins
+	Coins []string
+}
+
 type UdpServer struct {
 	// Port Number in which this UDP server will be listening
 	ListenPort int
@@ -35,7 +46,7 @@ type UdpServer struct {
 	Log_ref *Logger
 
 	// Map of all the registered miners
-	MapOfMiners map[string]chan string
+	MapOfMiners map[string]*MinerStack
 
 	// A flag denoting running status
 	Running bool
@@ -63,7 +74,9 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 	client_addr := <-clientAddr
 	udp.Log_ref.Info("Launching a ghoper for client : ", client_addr.String())
-	chl_data := <-udp.MapOfMiners[client_addr.String()]
+
+	clientDataChl := udp.MapOfMiners[client_addr.String()].ClientDataChannel
+	chl_data := <-clientDataChl
 	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
 
 	_,err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
@@ -93,7 +106,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 		udp.Log_ref.Debug("Waiting for response from client : ", client_addr.String())
 		select {
-			case chl_data := <-udp.MapOfMiners[client_addr.String()] :
+			case chl_data := <-clientDataChl :
 				udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", chl_data, client_addr.String()))
 				consecutiveKeepAliveTimeout = 0
 				time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
@@ -119,8 +132,8 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 func (udp *UdpServer) Start(doneChannel chan<- bool) {
 
-	udp.Log_ref.Debug("Creating another channel cl_channel")
-	cl_channel := make(chan *net.UDPAddr, 1)
+	udp.Log_ref.Debug("Creating another channel for sending client Address")
+	clAddr_channel := make(chan *net.UDPAddr, 1)
 
 	buf := make([]byte, 1024)
 	// Start the UDP server
@@ -133,23 +146,23 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 				continue
 			}
 
-			// convert the data into string
-			data := string(buf[0:bytes_read])
 			udp.Log_ref.Debug("Recieved data ")
 
 			// Check whether this client is already registered with us 
-			client_ch, found := udp.MapOfMiners[client_addr.String()]
+			minerInfo, found := udp.MapOfMiners[client_addr.String()]
 
 			if ! found {
 				udp.Log_ref.Info("Registering new client : ", client_addr)
 				udp.Log_ref.Debug("Creating new channel for this client")
-				udp.MapOfMiners[client_addr.String()] = make (chan string, 1)
-				client_ch = udp.MapOfMiners[client_addr.String()]
-				go udp.UdpClientGhoper(cl_channel)
-				cl_channel<- client_addr
+
+				minerInfo = new(MinerStack)
+				minerInfo.ClientDataChannel = make (chan string, 1)
+				udp.MapOfMiners[client_addr.String()] = minerInfo
+				go udp.UdpClientGhoper(clAddr_channel)
+				clAddr_channel<- client_addr
 			}
 
-			client_ch<- data
+			minerInfo.ClientDataChannel<- string(buf[0:bytes_read])
 		}
 	}()
 
