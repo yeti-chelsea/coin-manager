@@ -21,7 +21,7 @@ const (
 	CONSEQUTIVE_SEND_FAILURES int = 3
 	SLEEP_TIME_BEFORE_INTERACTING_INSEC int = 2
 	TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC int = 4
-	KEEP_ALIVE_SEND_TIMEOUT_INSEC int = 1
+	SEND_TIMEOUT_INSEC int = 1
 	SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT int = 2
 )
 
@@ -109,8 +109,15 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		udp.Log_ref.Error(err)
 	}
 
-	chl_data_bytes = <-clientDataChl
-	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
+	select {
+		case chl_data_bytes = <-clientDataChl:
+			udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
+		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+			udp.Log_ref.Debug(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
+			delete (udp.MapOfMiners, client_addr.String())
+			udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+			return
+	}
 
     json.Unmarshal(chl_data_bytes, minerStack.MinerDaemons)
     udp.Log_ref.Debug(minerStack.MinerDaemons)
@@ -123,8 +130,16 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		udp.Log_ref.Error(err)
 	}
 
-	chl_data_bytes = <-clientDataChl
-	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
+	select {
+		case chl_data_bytes = <-clientDataChl:
+			udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
+		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+			udp.Log_ref.Debug(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
+			delete (udp.MapOfMiners, client_addr.String())
+			udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+			return
+	}
+
 
     json.Unmarshal(chl_data_bytes, minerStack.MinerCoins)
     udp.Log_ref.Debug(minerStack.MinerCoins)
@@ -155,7 +170,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 				udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", string(chl_data_bytes), client_addr.String()))
 				consecutiveKeepAliveTimeout = 0
 				time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
-			case <-time.After(time.Duration(KEEP_ALIVE_SEND_TIMEOUT_INSEC) * time.Second):
+			case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
 				udp.Log_ref.Debug("Did not recieve response for keep-alive for 1 second")
 				consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
 				if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
