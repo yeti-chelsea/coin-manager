@@ -11,6 +11,8 @@ import (
 	"./cmanager"
 )
 
+const listenIp string = "0.0.0.0"
+
 type CommandLineArgs struct {
 	udpServerPortNumber		int		// -u
 	httpServerPortNumber	int		// -t
@@ -101,16 +103,10 @@ func main() {
 		channels[index] = make(chan bool, 1)
 	}
 
-	udpServer := cmanager.UdpServer {
-		ListenPort: cmd_ln.udpServerPortNumber,
-		ConnRef: nil,
-		Log_ref: &logger,
-		MapOfMiners: make(map[string]*cmanager.MinerStack),
-		Running: true,
-	}
+    udpServer := cmanager.UdpServer{}
 
 	logger.Info("Initalizing UDP server")
-	err = udpServer.Init()
+	err = udpServer.Init(listenIp, cmd_ln.udpServerPortNumber, &logger)
 	if err != nil {
 		logger.Error("Failed initalizing UDP server : ", err)
 		os.Exit(1)

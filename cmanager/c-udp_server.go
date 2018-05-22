@@ -7,8 +7,6 @@ import (
     "encoding/json"
 )
 
-const listenIp string = "0.0.0.0"
-
 const (
 	HELLO_MSG string = "Hello"
 	ACK_HELLO_MSG string = "Ack-Hello"
@@ -63,8 +61,13 @@ type UdpServer struct {
 	Running bool
 }
 
-func (udp *UdpServer) Init() error {
+func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) error {
 	// Initalize the UDP server
+
+    udp.ListenPort = listenPort
+    udp.Log_ref = logRef
+    udp.MapOfMiners = make(map[string]*MinerStack)
+
 	addr := net.UDPAddr{
         Port: udp.ListenPort,
         IP: net.ParseIP(listenIp),
@@ -78,6 +81,7 @@ func (udp *UdpServer) Init() error {
 		return err
 	}
 
+    udp.Running = true
 	return nil
 }
 
