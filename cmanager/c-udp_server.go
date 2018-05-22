@@ -13,6 +13,8 @@ const (
 	ACK_HELLO_MSG string = "Ack-Hello"
 	KEEP_ALIVE string = "Keep-Alive"
 	SEND_BASIC string = "Send-Basic"
+	MINER_DAEMONS string = "Miner-Daemons"
+	MINER_COINS string = "Miner-Coins"
 )
 
 const (
@@ -76,6 +78,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	udp.Log_ref.Info("Launching a ghoper for client : ", client_addr.String())
 
 	clientDataChl := udp.MapOfMiners[client_addr.String()].ClientDataChannel
+
 	chl_data := <-clientDataChl
 	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
 
@@ -83,6 +86,28 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	if err != nil {
 		udp.Log_ref.Error(err)
 	}
+
+	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
+
+	udp.Log_ref.Debug("Asking for Miner Daemons")
+	_,err = udp.ConnRef.WriteToUDP([]byte(MINER_DAEMONS), client_addr)
+	if err != nil {
+		udp.Log_ref.Error(err)
+	}
+
+	chl_data = <-clientDataChl
+	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
+
+	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
+
+	udp.Log_ref.Debug("Asking for Miner Coins")
+	_,err = udp.ConnRef.WriteToUDP([]byte(MINER_COINS), client_addr)
+	if err != nil {
+		udp.Log_ref.Error(err)
+	}
+
+	chl_data = <-clientDataChl
+	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",chl_data, client_addr))
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 	var consecutiveKeepAliveTimeout int = 0
