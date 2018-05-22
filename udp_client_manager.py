@@ -7,6 +7,7 @@ import socket
 import sys
 import threading
 import json
+import os
 from log_manager import Logger
 
 HELLO_MSG = "Hello"
@@ -48,7 +49,7 @@ def get_miner_daemons():
 
 def get_miner_coins():
     '''
-    Method to get all the coins that are supported by 
+    Method to get all the coins that are supported by
     various miner daemons
     '''
     list_of_minerd = get_miner_daemons()
@@ -57,10 +58,10 @@ def get_miner_coins():
     for each_miner in list_of_minerd:
         miner_etc = MINER_DAEMON_PATH + "/" + each_miner \
                 + "/" + "etc/"
-        coins[each_miner] = next(os.walk(miner_etc))[2]        
+        coins[each_miner] = next(os.walk(miner_etc))[2]
 
     list_of_coins = []
-    for key, values in coins.items():
+    for _, values in coins.items():
         for value in values:
             if value == "any_config.txt" or value == "any_cpu.txt":
                 continue
@@ -88,7 +89,7 @@ def get_miner_coins_json():
     }
     '''
     data = {}
-    data['miner-conis'] = get_miner_coins()
+    data['miner-coins'] = get_miner_coins()
     return json.dumps(data)
 
 class UdpClientThread(threading.Thread):
