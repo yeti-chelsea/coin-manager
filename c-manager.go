@@ -117,6 +117,14 @@ func main() {
 	logger.Debug("Starting UDP server")
 	udpServer.Start(channels[0])
 
+
+	httpServer := cmanager.HttpServer{}
+	logger.Info("Initalizing HTTP server")
+	httpServer.Init(listenIp, cmd_ln.httpServerPortNumber, &logger)
+
+	logger.Debug("Starting HTTP server")
+	httpServer.Start(channels[1])
+
 	// Wait for the Servers to complete
 	logger.Info("Wait for the Servers to complete")
 	for index := range channels {
