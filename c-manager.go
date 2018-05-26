@@ -26,7 +26,7 @@ func (cArgs *CommandLineArgs) InitCommandLineArgs() {
 	flag.IntVar(&cArgs.httpServerPortNumber, "t", 6767, "Http Server to listen. Must be between 1000-65536")
 	flag.BoolVar(&cArgs.runInBackground, "B", true, "Run in background")
 	flag.StringVar(&cArgs.logFile, "l", "stdout", "Log file name to log")
-	flag.IntVar(&cArgs.logLevel, "L", 10, "Log level")
+	flag.IntVar(&cArgs.logLevel, "L", 30, "Log level")
 
 	flag.Parse()
 }
@@ -87,14 +87,14 @@ func main() {
 
 	logger := cmanager.Logger{}
 
-	if logger.InitLogger(filePtr) == false {
+	if logger.InitLogger(filePtr, cmanager.LOG_LEVEL(cmd_ln.logLevel)) == false {
 		os.Exit(1)
 	}
 
 	logger.Debug("Initalizing signals")
 	InitSignals()
 
-	logger.Debug("Starting Coin manager")
+	logger.Info("Starting Coin manager")
 
 	var channels [2]chan bool
 
@@ -105,7 +105,7 @@ func main() {
 
     udpServer := cmanager.UdpServer{}
 
-	logger.Info("Initalizing UDP server")
+	logger.Debug("Initalizing UDP server")
 	err = udpServer.Init(listenIp, cmd_ln.udpServerPortNumber, &logger)
 	if err != nil {
 		logger.Error("Failed initalizing UDP server : ", err)
@@ -114,15 +114,15 @@ func main() {
 
 	defer udpServer.ConnRef.Close()
 
-	logger.Debug("Starting UDP server")
+	logger.Info("Starting UDP server")
 	udpServer.Start(channels[0])
 
 
 	httpServer := cmanager.HttpServer{}
-	logger.Info("Initalizing HTTP server")
+	logger.Debug("Initalizing HTTP server")
 	httpServer.Init(listenIp, cmd_ln.httpServerPortNumber, &logger)
 
-	logger.Debug("Starting HTTP server")
+	logger.Info("Starting HTTP server")
 	httpServer.Start(channels[1])
 
 	// Wait for the Servers to complete
@@ -131,5 +131,5 @@ func main() {
 		<-channels[index]
 	}
 
-	logger.Debug("Shutting down Coin manager")
+	logger.Info("Shutting down Coin manager")
 }

@@ -74,7 +74,7 @@ func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) erro
     }
 
 	var err error
-	udp.Log_ref.Info(fmt.Sprintf("Listering on ip : %v and port : %v", listenIp, udp.ListenPort))
+	udp.Log_ref.Info(fmt.Sprintf("UDP server Listering on %v:%v", listenIp, udp.ListenPort))
 	udp.ConnRef, err = net.ListenUDP("udp", &addr)
 
 	if err != nil {
@@ -171,7 +171,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 				consecutiveKeepAliveTimeout = 0
 				time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
 			case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
-				udp.Log_ref.Debug("Did not recieve response for keep-alive for 1 second")
+				udp.Log_ref.Info("Did not recieve response for keep-alive for")
 				consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
 				if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
 					udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
@@ -187,7 +187,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	}
 
 	delete (udp.MapOfMiners, client_addr.String())
-	udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+	udp.Log_ref.Info("Ending this ghoper for client : ", client_addr.String())
 }
 
 func (udp *UdpServer) Start(doneChannel chan<- bool) {

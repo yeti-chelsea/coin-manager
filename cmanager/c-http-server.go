@@ -49,10 +49,12 @@ func (http_s *HttpServer) Init(listenIp string, listenPort int, logRef *Logger) 
 
 	http_s.Controller = make(map[string]myHandlers)
 
+	http_s.Log_ref.Debug("Initlazing HTTP server")
 	http_s.AddHandlers("/rest/lserver", http_s.LocalRequestHandler)
 	http_s.AddHandlers("/rest/rproxy", http_s.ProxyRequestHandler)
 
 	for pattern, request_handler := range http_s.Controller {
+		http_s.Log_ref.Debug("Registering handler with multiplexer : ", pattern)
 		multiplexer.HandleFunc(pattern, request_handler)
 	}
 
@@ -66,6 +68,8 @@ func (http_s *HttpServer) Init(listenIp string, listenPort int, logRef *Logger) 
 }
 
 func (http_s *HttpServer) Start(doneChannel chan<- bool) {
+
+	http_s.Log_ref.Info("Http server Listening on ", http_s.ServerRef.Addr)
 	if err:= http_s.ServerRef.ListenAndServe(); err != http.ErrServerClosed {
 		http_s.Log_ref.Error("Could not listen on specificed address : ", err)
 	}

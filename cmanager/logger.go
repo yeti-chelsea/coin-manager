@@ -6,14 +6,25 @@ import (
 	"io"
 )
 
+type LOG_LEVEL int
+
+const (
+	ERROR_LEVEL LOG_LEVEL =  10
+	WARNING_LEVEL = 20
+	INFO_LEVEL = 30
+	DEBUG_LEVEL = 40
+)
+
 type Logger struct {
     DEBUG   *log.Logger
     INFO    *log.Logger
     WARNING *log.Logger
     ERROR   *log.Logger
+
+	LogLevel LOG_LEVEL
 }
 
-func (lgr *Logger) InitLogger(file_ptr *io.Writer) bool {
+func (lgr *Logger) InitLogger(file_ptr *io.Writer, level LOG_LEVEL) bool {
 
     lgr.DEBUG = log.New(*file_ptr,
 		"DEBUG: ",
@@ -31,21 +42,34 @@ func (lgr *Logger) InitLogger(file_ptr *io.Writer) bool {
         "ERROR: ",
         log.Ldate|log.Ltime|log.Lshortfile)
 
+	lgr.LogLevel = level
+
 	return true
 }
 
 func (lgr *Logger) Debug(v ...interface{}) {
-	lgr.DEBUG.Output(2, fmt.Sprint(v...))
+	if lgr.LogLevel >= DEBUG_LEVEL {
+		lgr.DEBUG.Output(2, fmt.Sprint(v...))
+	}
 }
 
 func (lgr *Logger) Info(v ...interface{}) {
-	lgr.INFO.Output(2, fmt.Sprint(v...))
+
+	if lgr.LogLevel >= INFO_LEVEL {
+		lgr.INFO.Output(2, fmt.Sprint(v...))
+	}
 }
 
 func (lgr *Logger) Warning(v ...interface{}) {
-	lgr.WARNING.Output(2, fmt.Sprint(v...))
+
+	if lgr.LogLevel >= WARNING_LEVEL {
+		lgr.WARNING.Output(2, fmt.Sprint(v...))
+	}
 }
 
 func (lgr *Logger) Error(v ...interface{}) {
-	lgr.ERROR.Output(2, fmt.Sprint(v...))
+
+	if lgr.LogLevel >= ERROR_LEVEL {
+		lgr.ERROR.Output(2, fmt.Sprint(v...))
+	}
 }
