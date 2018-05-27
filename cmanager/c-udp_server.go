@@ -1,36 +1,36 @@
 package cmanager
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"time"
-    "encoding/json"
 )
 
 const (
-	HELLO_MSG string = "Hello"
+	HELLO_MSG     string = "Hello"
 	ACK_HELLO_MSG string = "Ack-Hello"
-	KEEP_ALIVE string = "Keep-Alive"
-	SEND_BASIC string = "Send-Basic"
+	KEEP_ALIVE    string = "Keep-Alive"
+	SEND_BASIC    string = "Send-Basic"
 	MINER_DAEMONS string = "Miner-Daemons"
-	MINER_COINS string = "Miner-Coins"
+	MINER_COINS   string = "Miner-Coins"
 )
 
 const (
-	CONSEQUTIVE_KEEP_ALIVE_TIMEOUT int = 3
-	CONSEQUTIVE_SEND_FAILURES int = 3
+	CONSEQUTIVE_KEEP_ALIVE_TIMEOUT      int = 3
+	CONSEQUTIVE_SEND_FAILURES           int = 3
 	SLEEP_TIME_BEFORE_INTERACTING_INSEC int = 2
-	TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC int = 4
-	SEND_TIMEOUT_INSEC int = 1
+	TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC    int = 4
+	SEND_TIMEOUT_INSEC                  int = 1
 	SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT int = 2
 )
 
 type MDaemons struct {
-    Daemons []string `json:"miner-daemons"`
+	Daemons []string `json:"miner-daemons"`
 }
 
 type MCoins struct {
-    Coins []string `json:"miner-coins"`
+	Coins []string `json:"miner-coins"`
 }
 
 type MinerStack struct {
@@ -64,14 +64,14 @@ type UdpServer struct {
 func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) error {
 	// Initalize the UDP server
 
-    udp.ListenPort = listenPort
-    udp.Log_ref = logRef
-    udp.MapOfMiners = make(map[string]*MinerStack)
+	udp.ListenPort = listenPort
+	udp.Log_ref = logRef
+	udp.MapOfMiners = make(map[string]*MinerStack)
 
 	addr := net.UDPAddr{
-        Port: udp.ListenPort,
-        IP: net.ParseIP(listenIp),
-    }
+		Port: udp.ListenPort,
+		IP:   net.ParseIP(listenIp),
+	}
 
 	var err error
 	udp.Log_ref.Info(fmt.Sprintf("UDP server Listering on %v:%v", listenIp, udp.ListenPort))
@@ -81,7 +81,7 @@ func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) erro
 		return err
 	}
 
-    udp.Running = true
+	udp.Running = true
 	return nil
 }
 
@@ -90,13 +90,13 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	client_addr := <-clientAddr
 	udp.Log_ref.Info("Launching a ghoper for client : ", client_addr.String())
 
-    minerStack := udp.MapOfMiners[client_addr.String()]
+	minerStack := udp.MapOfMiners[client_addr.String()]
 	clientDataChl := minerStack.ClientDataChannel
 
 	chl_data_bytes := <-clientDataChl
-	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
+	udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s", string(chl_data_bytes), client_addr))
 
-	_,err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
+	_, err := udp.ConnRef.WriteToUDP([]byte(ACK_HELLO_MSG), client_addr)
 	if err != nil {
 		udp.Log_ref.Error(err)
 	}
@@ -104,45 +104,44 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 
 	udp.Log_ref.Debug("Asking for Miner Daemons")
-	_,err = udp.ConnRef.WriteToUDP([]byte(MINER_DAEMONS), client_addr)
+	_, err = udp.ConnRef.WriteToUDP([]byte(MINER_DAEMONS), client_addr)
 	if err != nil {
 		udp.Log_ref.Error(err)
 	}
 
 	select {
-		case chl_data_bytes = <-clientDataChl:
-			udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
-		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
-			udp.Log_ref.Debug(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
-			delete (udp.MapOfMiners, client_addr.String())
-			udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
-			return
+	case chl_data_bytes = <-clientDataChl:
+		udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s", string(chl_data_bytes), client_addr))
+	case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+		udp.Log_ref.Warning(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
+		delete(udp.MapOfMiners, client_addr.String())
+		udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+		return
 	}
 
-    json.Unmarshal(chl_data_bytes, minerStack.MinerDaemons)
-    udp.Log_ref.Debug(minerStack.MinerDaemons)
+	json.Unmarshal(chl_data_bytes, minerStack.MinerDaemons)
+	udp.Log_ref.Debug(minerStack.MinerDaemons)
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 
 	udp.Log_ref.Debug("Asking for Miner Coins")
-	_,err = udp.ConnRef.WriteToUDP([]byte(MINER_COINS), client_addr)
+	_, err = udp.ConnRef.WriteToUDP([]byte(MINER_COINS), client_addr)
 	if err != nil {
 		udp.Log_ref.Error(err)
 	}
 
 	select {
-		case chl_data_bytes = <-clientDataChl:
-			udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s",string(chl_data_bytes), client_addr))
-		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
-			udp.Log_ref.Debug(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
-			delete (udp.MapOfMiners, client_addr.String())
-			udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
-			return
+	case chl_data_bytes = <-clientDataChl:
+		udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s", string(chl_data_bytes), client_addr))
+	case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+		udp.Log_ref.Warning(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
+		delete(udp.MapOfMiners, client_addr.String())
+		udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+		return
 	}
 
-
-    json.Unmarshal(chl_data_bytes, minerStack.MinerCoins)
-    udp.Log_ref.Debug(minerStack.MinerCoins)
+	json.Unmarshal(chl_data_bytes, minerStack.MinerCoins)
+	udp.Log_ref.Debug(minerStack.MinerCoins)
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 	var consecutiveKeepAliveTimeout int = 0
@@ -151,7 +150,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	for udp.Running == true {
 
 		udp.Log_ref.Debug("Sending keep alive message to : ", client_addr.String())
-		_,err := udp.ConnRef.WriteToUDP([]byte(KEEP_ALIVE), client_addr)
+		_, err := udp.ConnRef.WriteToUDP([]byte(KEEP_ALIVE), client_addr)
 		if err != nil {
 			udp.Log_ref.Error(err)
 			consecutiveFailures = consecutiveFailures + 1
@@ -166,19 +165,19 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 		udp.Log_ref.Debug("Waiting for response from client : ", client_addr.String())
 		select {
-			case chl_data_bytes := <-clientDataChl :
-				udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", string(chl_data_bytes), client_addr.String()))
-				consecutiveKeepAliveTimeout = 0
-				time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
-			case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
-				udp.Log_ref.Info("Did not recieve response for keep-alive for")
-				consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
-				if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
-					udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
-					breakout = true
-					break
-				}
-				time.Sleep(time.Duration(SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT) * time.Second)
+		case chl_data_bytes := <-clientDataChl:
+			udp.Log_ref.Debug(fmt.Sprintf("Received message %s from client %s", string(chl_data_bytes), client_addr.String()))
+			consecutiveKeepAliveTimeout = 0
+			time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
+		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+			udp.Log_ref.Info("Did not receive response for keep-alive")
+			consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
+			if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
+				udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
+				breakout = true
+				break
+			}
+			time.Sleep(time.Duration(SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT) * time.Second)
 		}
 
 		if breakout {
@@ -186,7 +185,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		}
 	}
 
-	delete (udp.MapOfMiners, client_addr.String())
+	delete(udp.MapOfMiners, client_addr.String())
 	udp.Log_ref.Info("Ending this ghoper for client : ", client_addr.String())
 }
 
@@ -208,25 +207,25 @@ func (udp *UdpServer) Start(doneChannel chan<- bool) {
 
 			udp.Log_ref.Debug("Recieved data ")
 
-			// Check whether this client is already registered with us 
+			// Check whether this client is already registered with us
 			minerInfo, found := udp.MapOfMiners[client_addr.String()]
 
-			if ! found {
+			if !found {
 				udp.Log_ref.Info("Registering new client : ", client_addr)
 				udp.Log_ref.Debug("Creating new channel for this client")
 
 				minerInfo = new(MinerStack)
-				minerInfo.ClientDataChannel = make (chan []byte, 1)
-                minerInfo.MinerDaemons = new(MDaemons)
-                minerInfo.MinerCoins = new(MCoins)
+				minerInfo.ClientDataChannel = make(chan []byte, 1)
+				minerInfo.MinerDaemons = new(MDaemons)
+				minerInfo.MinerCoins = new(MCoins)
 				udp.MapOfMiners[client_addr.String()] = minerInfo
 				go udp.UdpClientGhoper(clAddr_channel)
-				clAddr_channel<- client_addr
+				clAddr_channel <- client_addr
 			}
 
-			minerInfo.ClientDataChannel<- buf[0:bytes_read]
+			minerInfo.ClientDataChannel <- buf[0:bytes_read]
 		}
 	}()
 
-	doneChannel<- true
+	doneChannel <- true
 }
