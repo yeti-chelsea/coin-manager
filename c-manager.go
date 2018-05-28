@@ -97,7 +97,7 @@ func main() {
 	logger.Info("Starting Coin manager")
 
 	var doneChannels [2]chan bool
-	var interCommChannels [2]chan string
+	var interCommChannels [2]chan []byte
 
 	logger.Debug("Creating channels")
 	for index := range doneChannels {
@@ -106,7 +106,7 @@ func main() {
 
 	logger.Debug("Creating Inter Communicating channels")
 	for index := range interCommChannels {
-		interCommChannels[index] = make(chan string, 1)
+		interCommChannels[index] = make(chan []byte, 1)
 	}
 
     udpServer := cmanager.UdpServer{}

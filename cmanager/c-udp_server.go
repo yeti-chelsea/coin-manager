@@ -15,10 +15,6 @@ type MCoins struct {
 	Coins []string `json:REGISTERED_MINER_COINS`
 }
 
-type MIps struct {
-	Ips []string `json:REGISTERED_MINER_IP`
-}
-
 type MinerStack struct {
 	// Channel for receiving data from specific client
 	ClientDataChannel chan []byte
@@ -47,10 +43,10 @@ type UdpServer struct {
 	Running bool
 
 	// Channel for receiving request form Http server
-	RequestReceiveFromHttp <-chan string
+	RequestReceiveFromHttp <-chan []byte
 
 	// Channel for sending response to Http server
-	SendResponseToHttp chan<- string
+	SendResponseToHttp chan<- []byte
 }
 
 
@@ -79,7 +75,7 @@ func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) erro
 	return nil
 }
 
-func (udp *UdpServer) InitInterCommChannels(requestReceiveChl <-chan string, responseSendChl chan<- string) {
+func (udp *UdpServer) InitInterCommChannels(requestReceiveChl <-chan []byte, responseSendChl chan<- []byte) {
 	udp.RequestReceiveFromHttp = requestReceiveChl
 	udp.SendResponseToHttp = responseSendChl
 
@@ -95,7 +91,7 @@ func (udp *UdpServer) HttpCommGopher() {
 
 		udp.Log_ref.Debug("Received message : ", msg)
 
-		if msg == REGISTERED_MINER_IP {
+		if string(msg) == REGISTERED_MINER_IP {
 			numOfElements := len(udp.MapOfMiners)
 
 			minerIps := MIps{}
@@ -109,7 +105,7 @@ func (udp *UdpServer) HttpCommGopher() {
 
 			byte_data, _ := json.Marshal(minerIps)
 			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
-			udp.SendResponseToHttp<- string(byte_data)
+			udp.SendResponseToHttp<- byte_data
 		}
 	}
 }

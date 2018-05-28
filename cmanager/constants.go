@@ -27,3 +27,8 @@ const (
 var SupportedCurlRequest = []string {
 	REGISTERED_MINER_IP,
 	REGISTERED_MINER_DAEMONS }
+
+type MIps struct {
+	Ips []string `json:REGISTERED_MINER_IP`
+}
+

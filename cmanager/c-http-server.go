@@ -3,7 +3,9 @@ package cmanager
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+	"io/ioutil"
 )
 
 type myHandlers func(http.ResponseWriter, *http.Request)
@@ -25,40 +27,100 @@ type HttpServer struct {
 	Controller map[string]myHandlers
 
 	// Channel for sending Request to UDP server
-	SendRequestToUdp chan<- string
+	SendRequestToUdp chan<- []byte
 
 	// Channel for receiving Response from UDP server
-	RespnoseReceiveFromUdp <-chan string
+	RespnoseReceiveFromUdp <-chan []byte
+}
+
+func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- string) {
+
+	url := "http://" + minerHost
+	payload := strings.NewReader(request)
+
+	req, _ := http.NewRequest("POST", url, payload)
+	req.Header.Add("cache-control", "no-cache")
+
+	res, _ := http.DefaultClient.Do(req)
+	defer res.Body.Close()
+
+	body, _ := ioutil.ReadAll(res.Body)
+
+	minerResponse<- string(body)
+
 }
 
 func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Request) {
 
-	http_s.Log_ref.Debug("Received request for serving locally")
+	// Supported URL's
+	// "/rest/lserver?miner-ip=<all/miner-ip>
+	// "/rest/lserver?miner-coins=<all/miner-ip>
+	// "/rest/lserver?miner-ip=<all/miner-ip>
+	// "/rest/lserver?mine-coin=<all/miner-ip>?<coin>"
+	// "/rest/lserver?stop-mining=<all/miner-ip>"
+	// "/rest/lserver?mine-log=<all/miner-ip>
+	http_s.Log_ref.Debug("Received request for serving locally : ", r.URL.RawQuery)
 
-	responseFromUdp := "Unsupported-Query"
+	supportedCurlRequest := []string {
+		"miner-ip=",
+		"miner-coins=",
+		"miner-daemons=",
+		"stop-mining=",
+		"mine-log=",
+		"mine-coin=" }
+
+	responseFromUdp := []byte("Unsupported-Query")
 
 	var requestFound = false
-	for _,supported_req := range SupportedCurlRequest {
-		if supported_req == r.URL.RawQuery {
+	for _,supported_req := range supportedCurlRequest {
+		if strings.Contains(r.URL.RawQuery, supported_req) {
 			requestFound = true
 			break
 		}
 	}
 
 	if ! requestFound {
-		w.Write([]byte(responseFromUdp))
+		w.Write(responseFromUdp)
 		return
 	}
 
-	http_s.Log_ref.Debug("Sending Request to UDP server")
-	http_s.SendRequestToUdp<- r.URL.RawQuery
-	responseFromUdp = <-http_s.RespnoseReceiveFromUdp
-	http_s.Log_ref.Debug("Received response from UDP server")
+	arg1 := strings.Split(r.URL.RawQuery, "=")[0]
+	arg2 := strings.Split(r.URL.RawQuery, "=")[1]
 
-	w.Write([]byte(responseFromUdp))
+	if arg1 == supportedCurlRequest[0] ||
+	arg1 == supportedCurlRequest[1] ||
+	arg1 == supportedCurlRequest[2] {
+		http_s.Log_ref.Debug("Sending Request to UDP server")
+		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
+		responseFromUdp = <-http_s.RespnoseReceiveFromUdp
+		http_s.Log_ref.Debug("Received response from UDP server : ", responseFromUdp)
+	}
+
+	if arg1 == supportedCurlRequest[3] ||
+	arg1 == supportedCurlRequest[4] {
+		http_s.Log_ref.Debug("Requesting for all miner ips")
+		http_s.SendRequestToUdp<- []byte(supportedCurlRequest[0])
+		//minerIpsRawFormat := <-http_s.RespnoseReceiveFromUdp
+
+		http_s.Log_ref.Debug("Received response from UDP server : ", responseFromUdp)
+	}
+
+	if arg1 == supportedCurlRequest[5] {
+		mineIp := strings.Split(arg2, "?")[0]
+		//coin := strings.Split(arg2, "?")[1]
+
+		http_s.SendRequestToUdp<- []byte(arg1 + "=" + mineIp)
+	}
+
+	w.Write(responseFromUdp)
 }
 
 func (http_s *HttpServer) ProxyRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+	// Supported URL's
+	// "/rest/rproxy?mine-coin=<coin-name>"
+	// "/rest/rproxy?stop-mining"
+	// "/rest/rproxy?mine-log"
 
 	http_s.Log_ref.Debug("Received request for proxying")
 	http_s.Log_ref.Debug(r.URL.Path)
@@ -93,7 +155,7 @@ func (http_s *HttpServer) Init(listenIp string, listenPort int, logRef *Logger) 
 	http_s.ServerRef.Handler = multiplexer
 }
 
-func (http_s *HttpServer) InitInterCommChannels(requestSendChl chan<- string, responseReceiveChl <-chan string) {
+func (http_s *HttpServer) InitInterCommChannels(requestSendChl chan<- []byte, responseReceiveChl <-chan []byte) {
 	http_s.SendRequestToUdp = requestSendChl
 	http_s.RespnoseReceiveFromUdp = responseReceiveChl
 }
