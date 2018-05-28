@@ -3,13 +3,7 @@ package cmanager
 import (
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
-)
-
-const (
-	REGISTERED_MINER_IP      string = "miner-ip"
-	REGISTERED_MINER_DAEMONS string = "miner-daemons"
 )
 
 type myHandlers func(http.ResponseWriter, *http.Request)
@@ -29,18 +23,39 @@ type HttpServer struct {
 
 	// Controller for serving http requests
 	Controller map[string]myHandlers
+
+	// Channel for sending Request to UDP server
+	SendRequestToUdp chan<- string
+
+	// Channel for receiving Response from UDP server
+	RespnoseReceiveFromUdp <-chan string
 }
 
 func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Request) {
 
-	http_s.Log_ref.Debug("Received request for serving locally : ")
-	http_s.Log_ref.Debug(r.URL.Path)
+	http_s.Log_ref.Debug("Received request for serving locally")
 
-	if strings.Contains(r.URL.Path, REGISTERED_MINER_IP) {
+	responseFromUdp := "Unsupported-Query"
 
-	} else if strings.Contains(r.URL.Path, REGISTERED_MINER_DAEMONS) {
+	var requestFound = false
+	for _,supported_req := range SupportedCurlRequest {
+		if supported_req == r.URL.RawQuery {
+			requestFound = true
+			break
+		}
 	}
 
+	if ! requestFound {
+		w.Write([]byte(responseFromUdp))
+		return
+	}
+
+	http_s.Log_ref.Debug("Sending Request to UDP server")
+	http_s.SendRequestToUdp<- r.URL.RawQuery
+	responseFromUdp = <-http_s.RespnoseReceiveFromUdp
+	http_s.Log_ref.Debug("Received response from UDP server")
+
+	w.Write([]byte(responseFromUdp))
 }
 
 func (http_s *HttpServer) ProxyRequestHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +91,11 @@ func (http_s *HttpServer) Init(listenIp string, listenPort int, logRef *Logger) 
 	http_s.ServerRef.IdleTimeout = 15 * time.Second
 	http_s.ServerRef.ErrorLog = logRef.ERROR
 	http_s.ServerRef.Handler = multiplexer
+}
+
+func (http_s *HttpServer) InitInterCommChannels(requestSendChl chan<- string, responseReceiveChl <-chan string) {
+	http_s.SendRequestToUdp = requestSendChl
+	http_s.RespnoseReceiveFromUdp = responseReceiveChl
 }
 
 func (http_s *HttpServer) Start(doneChannel chan<- bool) {

@@ -96,11 +96,17 @@ func main() {
 
 	logger.Info("Starting Coin manager")
 
-	var channels [2]chan bool
+	var doneChannels [2]chan bool
+	var interCommChannels [2]chan string
 
 	logger.Debug("Creating channels")
-	for index := range channels {
-		channels[index] = make(chan bool, 1)
+	for index := range doneChannels {
+		doneChannels[index] = make(chan bool, 1)
+	}
+
+	logger.Debug("Creating Inter Communicating channels")
+	for index := range interCommChannels {
+		interCommChannels[index] = make(chan string, 1)
 	}
 
     udpServer := cmanager.UdpServer{}
@@ -112,23 +118,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	udpServer.InitInterCommChannels(interCommChannels[0], interCommChannels[1])
+
 	defer udpServer.ConnRef.Close()
 
 	logger.Info("Starting UDP server")
-	udpServer.Start(channels[0])
+	udpServer.Start(doneChannels[0])
 
 
 	httpServer := cmanager.HttpServer{}
 	logger.Debug("Initalizing HTTP server")
 	httpServer.Init(listenIp, cmd_ln.httpServerPortNumber, &logger)
 
+	httpServer.InitInterCommChannels(interCommChannels[0], interCommChannels[1])
+
 	logger.Info("Starting HTTP server")
-	httpServer.Start(channels[1])
+	httpServer.Start(doneChannels[1])
 
 	// Wait for the Servers to complete
 	logger.Info("Wait for the Servers to complete")
-	for index := range channels {
-		<-channels[index]
+	for index := range doneChannels {
+		<-doneChannels[index]
 	}
 
 	logger.Info("Shutting down Coin manager")

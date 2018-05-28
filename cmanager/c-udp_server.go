@@ -7,30 +7,16 @@ import (
 	"time"
 )
 
-const (
-	HELLO_MSG     string = "Hello"
-	ACK_HELLO_MSG string = "Ack-Hello"
-	KEEP_ALIVE    string = "Keep-Alive"
-	SEND_BASIC    string = "Send-Basic"
-	MINER_DAEMONS string = "Miner-Daemons"
-	MINER_COINS   string = "Miner-Coins"
-)
-
-const (
-	CONSEQUTIVE_KEEP_ALIVE_TIMEOUT      int = 3
-	CONSEQUTIVE_SEND_FAILURES           int = 3
-	SLEEP_TIME_BEFORE_INTERACTING_INSEC int = 2
-	TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC    int = 4
-	SEND_TIMEOUT_INSEC                  int = 1
-	SLEEP_TIME_AFTER_KEEP_ALIVE_TIMEOUT int = 2
-)
-
 type MDaemons struct {
-	Daemons []string `json:"miner-daemons"`
+	Daemons []string `json:REGISTERED_MINER_DAEMONS`
 }
 
 type MCoins struct {
-	Coins []string `json:"miner-coins"`
+	Coins []string `json:REGISTERED_MINER_COINS`
+}
+
+type MIps struct {
+	Ips []string `json:REGISTERED_MINER_IP`
 }
 
 type MinerStack struct {
@@ -59,7 +45,15 @@ type UdpServer struct {
 
 	// A flag denoting running status
 	Running bool
+
+	// Channel for receiving request form Http server
+	RequestReceiveFromHttp <-chan string
+
+	// Channel for sending response to Http server
+	SendResponseToHttp chan<- string
 }
+
+
 
 func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) error {
 	// Initalize the UDP server
@@ -83,6 +77,41 @@ func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) erro
 
 	udp.Running = true
 	return nil
+}
+
+func (udp *UdpServer) InitInterCommChannels(requestReceiveChl <-chan string, responseSendChl chan<- string) {
+	udp.RequestReceiveFromHttp = requestReceiveChl
+	udp.SendResponseToHttp = responseSendChl
+
+	go udp.HttpCommGopher()
+}
+
+func (udp *UdpServer) HttpCommGopher() {
+
+	udp.Log_ref.Debug("Starting gopher for communicating with UDP server")
+
+	for {
+		msg := <-udp.RequestReceiveFromHttp
+
+		udp.Log_ref.Debug("Received message : ", msg)
+
+		if msg == REGISTERED_MINER_IP {
+			numOfElements := len(udp.MapOfMiners)
+
+			minerIps := MIps{}
+			minerIps.Ips = make([]string, numOfElements)
+
+			var index int = 0
+			for k, _ := range udp.MapOfMiners {
+				minerIps.Ips[index] = k
+				index = index + 1
+			}
+
+			byte_data, _ := json.Marshal(minerIps)
+			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
+			udp.SendResponseToHttp<- string(byte_data)
+		}
+	}
 }
 
 func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
