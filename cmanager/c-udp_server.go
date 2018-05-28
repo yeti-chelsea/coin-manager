@@ -199,7 +199,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 			consecutiveKeepAliveTimeout = 0
 			time.Sleep(time.Duration(TIMEOUT_BETWEEN_KEEP_ALIVE_INSEC) * time.Second)
 		case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
-			udp.Log_ref.Info("Did not receive response for keep-alive")
+			udp.Log_ref.Info("Did not receive response for keep-alive for client :", client_addr.String())
 			consecutiveKeepAliveTimeout = consecutiveKeepAliveTimeout + 1
 			if consecutiveKeepAliveTimeout == CONSEQUTIVE_KEEP_ALIVE_TIMEOUT {
 				udp.Log_ref.Warning("Keep alive timedout 3 consequtive times.. quitting !!!")
