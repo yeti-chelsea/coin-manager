@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 '''
 UDP client thread and socket
 '''
@@ -8,7 +7,6 @@ import sys
 import threading
 import json
 import os
-from log_manager import Logger
 
 HELLO_MSG = "Hello"
 ACK_HELLO_MSG = "Ack-Hello"
@@ -164,11 +162,3 @@ class UdpClientThread(threading.Thread):
 
                 else:
                     self._logger_ref.warning("Unknown message received.")
-
-'''
-Testing
-'''
-L_LOGGER = Logger("Ranjith", "stdout")
-SERVER_ADD = ("localhost", 6767)
-UDPCLIENT_MANAGER = UdpClientThread(SERVER_ADD, L_LOGGER)
-UDPCLIENT_MANAGER.start()

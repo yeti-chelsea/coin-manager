@@ -7,8 +7,8 @@ def main():
     '''
     Main function
     '''
-    l_logger = Logger("Ranjith", "stdout")
-    server_address = ("localhost", 6767)
+    l_logger = Logger("tpc_launch", "/var/log/tpc_launch.log")
+    server_address = ("c-manager.rgowda.mycloud.wtl.sandvine.com", 6767)
     udpclient_manager = UdpClientThread(server_address, l_logger)
     udpclient_manager.start()
 
