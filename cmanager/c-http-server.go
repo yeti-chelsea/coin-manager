@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"encoding/json"
 	"io/ioutil"
 )
 
@@ -33,7 +34,7 @@ type HttpServer struct {
 	RespnoseReceiveFromUdp <-chan []byte
 }
 
-func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- string) {
+func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- []byte) {
 
 	url := "http://" + minerHost
 	payload := strings.NewReader(request)
@@ -46,7 +47,7 @@ func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, mi
 
 	body, _ := ioutil.ReadAll(res.Body)
 
-	minerResponse<- string(body)
+	minerResponse<- body
 
 }
 
@@ -55,7 +56,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	// Supported URL's
 	// "/rest/lserver?miner-ip=<all/miner-ip>
 	// "/rest/lserver?miner-coins=<all/miner-ip>
-	// "/rest/lserver?miner-ip=<all/miner-ip>
+	// "/rest/lserver?miner-daemons=<all/miner-ip>
 	// "/rest/lserver?mine-coin=<all/miner-ip>?<coin>"
 	// "/rest/lserver?stop-mining=<all/miner-ip>"
 	// "/rest/lserver?mine-log=<all/miner-ip>
@@ -69,7 +70,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		"mine-log=",
 		"mine-coin=" }
 
-	responseFromUdp := []byte("Unsupported-Query")
+	responseToClient := []byte("Unsupported-Query")
 
 	var requestFound = false
 	for _,supported_req := range supportedCurlRequest {
@@ -80,7 +81,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if ! requestFound {
-		w.Write(responseFromUdp)
+		w.Write(responseToClient)
 		return
 	}
 
@@ -92,27 +93,52 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	arg1 == supportedCurlRequest[2] {
 		http_s.Log_ref.Debug("Sending Request to UDP server")
 		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
-		responseFromUdp = <-http_s.RespnoseReceiveFromUdp
-		http_s.Log_ref.Debug("Received response from UDP server : ", responseFromUdp)
+		responseToClient = <-http_s.RespnoseReceiveFromUdp
+		http_s.Log_ref.Debug("Received response from UDP server : ", responseToClient)
 	}
 
 	if arg1 == supportedCurlRequest[3] ||
 	arg1 == supportedCurlRequest[4] {
 		http_s.Log_ref.Debug("Requesting for all miner ips")
-		http_s.SendRequestToUdp<- []byte(supportedCurlRequest[0])
-		//minerIpsRawFormat := <-http_s.RespnoseReceiveFromUdp
+		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + arg2)
+		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
-		http_s.Log_ref.Debug("Received response from UDP server : ", responseFromUdp)
+		mIps := MIps{}
+		json.Unmarshal(minerIpsbyteFormat, mIps)
+
+		for _, reg_ips := range mIps.Ips {
+			res_from_miner := make(chan []byte, 1)
+			go http_s.HttpClientRequest(reg_ips, arg1, res_from_miner)
+
+			// TODO : Response must be multiplexed from all the gophers
+			responseToClient = <-res_from_miner
+		}
+
+		http_s.Log_ref.Debug("Response sent  : ", responseToClient)
 	}
 
 	if arg1 == supportedCurlRequest[5] {
 		mineIp := strings.Split(arg2, "?")[0]
-		//coin := strings.Split(arg2, "?")[1]
+		coin := strings.Split(arg2, "?")[1]
 
-		http_s.SendRequestToUdp<- []byte(arg1 + "=" + mineIp)
+		http_s.Log_ref.Debug("Requesting for all miner ips")
+		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + mineIp)
+		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
+
+		mIps := MIps{}
+		json.Unmarshal(minerIpsbyteFormat, mIps)
+
+		for _, reg_ips := range mIps.Ips {
+			res_from_miner := make(chan []byte, 1)
+			go http_s.HttpClientRequest(reg_ips, arg1 + "=" + coin, res_from_miner)
+
+			// TODO : Response must be multiplexed from all the gophers
+			responseToClient = <-res_from_miner
+		}
+		http_s.Log_ref.Debug("Response sent  : ", responseToClient)
 	}
 
-	w.Write(responseFromUdp)
+	w.Write(responseToClient)
 }
 
 func (http_s *HttpServer) ProxyRequestHandler(w http.ResponseWriter, r *http.Request) {

@@ -5,15 +5,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"strings"
 )
-
-type MDaemons struct {
-	Daemons []string `json:REGISTERED_MINER_DAEMONS`
-}
-
-type MCoins struct {
-	Coins []string `json:REGISTERED_MINER_COINS`
-}
 
 type MinerStack struct {
 	// Channel for receiving data from specific client
@@ -87,11 +80,14 @@ func (udp *UdpServer) HttpCommGopher() {
 	udp.Log_ref.Debug("Starting gopher for communicating with UDP server")
 
 	for {
-		msg := <-udp.RequestReceiveFromHttp
+		msg_bytes := <-udp.RequestReceiveFromHttp
 
-		udp.Log_ref.Debug("Received message : ", msg)
+		msg_string := string(msg_bytes)
+		arg1 := strings.Split(msg_string, "=")[0]
+		//arg2 := strings.Split(msg_string, "=")[1]
+		udp.Log_ref.Debug("Received message : ", msg_string)
 
-		if string(msg) == REGISTERED_MINER_IP {
+		if arg1 == REGISTERED_MINER_IP {
 			numOfElements := len(udp.MapOfMiners)
 
 			minerIps := MIps{}
@@ -106,6 +102,42 @@ func (udp *UdpServer) HttpCommGopher() {
 			byte_data, _ := json.Marshal(minerIps)
 			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
 			udp.SendResponseToHttp<- byte_data
+		} else if arg1 == REGISTERED_MINER_DAEMONS {
+			numOfElements := len(udp.MapOfMiners)
+			allMinerInfos := make([]AllMinerInfo, numOfElements)
+
+			var index int = 0
+			for key, mStack := range udp.MapOfMiners {
+				allMinerInfos[index].Ip = key
+
+				allMinerInfos[index].Daemons = make([]string, len(mStack.MinerDaemons.Daemons))
+				for i, val := range mStack.MinerDaemons.Daemons {
+					allMinerInfos[index].Daemons[i] = val
+				}
+			}
+
+			byte_data, _ := json.Marshal(allMinerInfos)
+			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
+			udp.SendResponseToHttp<- byte_data
+		} else if arg1 == REGISTERED_MINER_COINS {
+			numOfElements := len(udp.MapOfMiners)
+			allMinerInfos := make([]AllMinerInfo, numOfElements)
+
+			var index int = 0
+			for key, mStack := range udp.MapOfMiners {
+				allMinerInfos[index].Ip = key
+
+				allMinerInfos[index].Coins = make([]string, len(mStack.MinerCoins.Coins))
+				for i, val := range mStack.MinerCoins.Coins {
+					allMinerInfos[index].Daemons[i] = val
+				}
+			}
+
+			byte_data, _ := json.Marshal(allMinerInfos)
+			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
+			udp.SendResponseToHttp<- byte_data
+		}else {
+			udp.SendResponseToHttp<- []byte("Unknown-Response")
 		}
 	}
 }

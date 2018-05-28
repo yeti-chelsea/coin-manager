@@ -11,3 +11,9 @@ type MDaemons struct {
 type MCoins struct {
 	Coins []string `json:REGISTERED_MINER_COINS`
 }
+
+type AllMinerInfo struct {
+	Ip string `json:REGISTERED_MINER_IP`
+	Daemons []string `json:REGISTERED_MINER_DAEMONS`
+	Coins []string `json:REGISTERED_MINER_COINS`
+}
