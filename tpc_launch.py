@@ -29,7 +29,7 @@ def main():
 	default="/var/log/tpc_launch.log", help='log file path')
     parser.add_argument('-u', dest='udp_server_address', \
         default="c-manager.rgowda.mycloud.wtl.sandvine.com:6767", \
-		help='UDP server address')
+		help='UDP server to connect')
     parser.add_argument('-t', dest='http_server', \
 		default="0.0.0.0:6767", help="HTTP server to listen")
 

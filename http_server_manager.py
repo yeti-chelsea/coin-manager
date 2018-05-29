@@ -3,12 +3,18 @@
 '''
 Http server thread and socket
 '''
-# https://cpiekarski.com/2011/05/09/super-easy-python-json-client-server/
 
 import socket
 import threading
 import time
 from urllib.parse import urlparse
+
+SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin"]
+
+def do_action():
+    '''
+
+    '''
 
 class HttpServerSocket(object):
     '''
@@ -17,6 +23,8 @@ class HttpServerSocket(object):
     def __init__(self, address='0.0.0.0:6767'):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._bind_address = address
+
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.bind(self._bind_address)
         self._socket.settimeout(3)
         self._socket.listen(2)
@@ -47,6 +55,7 @@ class HttpServerThread(threading.Thread):
     def __init__(self, bind_addr, logger_ref):
         threading.Thread.__init__(self)
         self._logger_ref = logger_ref
+        
         self.http_server_socket = HttpServerSocket(bind_addr)
         self._logger_ref.debug("Initalizing HTTP socket")
         self._thread_start = True
@@ -62,15 +71,37 @@ class HttpServerThread(threading.Thread):
             except socket.timeout:
                 continue
 
-            print("Received connection from client : ", client_addr)
+            self._logger_ref.info("Received connection from client : ", client_addr)
             data = client_socket.recv(1024)
-            #print(data.decode())
+            response = ""
             url_data = urlparse(data.decode())
-            print("Compelte : ", url_data)
-            print("Path", url_data.path[1])
-            print("Query", url_data.query)
-            print("Param", url_data.params)
-            response = "Accepted"
+            path = url_data.path.split(' ')[1]
+            query = url_data.query.split(' ')[0]
+
+            if path != "/rest/rproxy":
+                self._logger_ref.warning("Unsupported path")
+                response = "Unsupported url path"
+                client_socket.sendall(response.encode())
+                client_socket.close()
+                continue
+
+            mine_query = ""
+            if query.find('=') != -1:
+                mine_query = query
+                query = query.split('=')[0]
+
+            supported_query = False
+            for qry in SUPPORTED_QUERY:
+                if query in qry:
+                    supported_query = True
+
+            if supported_query == False:
+                response = "Unsupported Query"
+                client_socket.sendall(response.encode())
+                client_socket.close()
+                continue
+
+            response = "Success"
             client_socket.sendall(response.encode())
             client_socket.close()
 
