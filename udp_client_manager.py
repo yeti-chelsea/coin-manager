@@ -7,6 +7,7 @@ import sys
 import threading
 import json
 import os
+import time
 
 HELLO_MSG = "Hello"
 ACK_HELLO_MSG = "Ack-Hello"
@@ -15,27 +16,6 @@ SEND_BASIC = "Send-Basic"
 MINER_DAEMONS = "Miner-Daemons"
 MINER_COINS = "Miner-Coins"
 MINER_DAEMON_PATH = "/opt/cypto"
-
-class UdpSocket(object):
-    '''
-    Simple wrapper around UDP socket
-    '''
-    def __init__(self, server_addr):
-        self._sock_fd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._server_address = server_addr
-
-    def udp_send(self, msg):
-        '''
-        Responsible for establishing a connection with the server
-        '''
-        return self._sock_fd.sendto(msg.encode(), self._server_address)
-
-    def udp_receive(self, timeout=1):
-        '''
-        Responsible for receiving messages
-        '''
-        self._sock_fd.settimeout(timeout)
-        return self._sock_fd.recvfrom(4096)
 
 
 def get_miner_daemons():
@@ -90,6 +70,33 @@ def get_miner_coins_json():
     data['miner-coins'] = get_miner_coins()
     return json.dumps(data)
 
+class UdpSocket(object):
+    '''
+    Simple wrapper around UDP socket
+    '''
+    def __init__(self, server_addr):
+        self._sock_fd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._server_address = server_addr
+
+    def udp_send(self, msg):
+        '''
+        Responsible for establishing a connection with the server
+        '''
+        return self._sock_fd.sendto(msg.encode(), self._server_address)
+
+    def udp_receive(self, timeout=1):
+        '''
+        Responsible for receiving messages
+        '''
+        self._sock_fd.settimeout(timeout)
+        return self._sock_fd.recvfrom(4096)
+
+    def close_socket(self):
+        '''
+        Wrapper for closing the socket
+        '''
+        self._sock_fd.close()
+
 class UdpClientThread(threading.Thread):
     '''
     Simple UDP Client thread responsible for
@@ -117,7 +124,9 @@ class UdpClientThread(threading.Thread):
             self._logger_ref.critical("Failed to send packet, server might not be running")
             sys.exit(1)
 
-        while True:
+        self._thread_start = True
+        self._thread_runnung = True
+        while self._thread_runnung:
 
             try:
                 data = self._udp_client_interface.udp_receive(6)
@@ -162,3 +171,18 @@ class UdpClientThread(threading.Thread):
 
                 else:
                     self._logger_ref.warning("Unknown message received.")
+
+        self._thread_start = False
+    def stop(self):
+        '''
+        Stop the thread
+        '''
+        self._logger_ref.info("Shutting down UDP server")
+        self._thread_runnung = False
+
+        while self._thread_start:
+            time.sleep(1)
+
+        self._logger_ref.debug("Closing server socket")
+        self._udp_client_interface.close_socket()
+        self._logger_ref.info("UDP server down")

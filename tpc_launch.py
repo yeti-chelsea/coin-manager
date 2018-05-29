@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 
 import argparse
-from udp_client_manager import UdpClientThread 
+import signal
 from log_manager import Logger
+from udp_client_manager import UdpClientThread 
+from http_server_manager import HttpServerThread
+
+LIST_OF_THREADS = []
+
+def signal_handler(signalnum, stack):
+    '''
+    Signal handler for SIGINT, SIGQUIT, SIGHUP
+    '''
+
+    for thread_obj in LIST_OF_THREADS:
+        thread_obj.stop()
 
 def main():
     '''
@@ -24,13 +36,24 @@ def main():
     http_server_addr = str(args.http_server).split(':')[0]
     http_server_port = str(args.http_server).split(':')[1]
 
-    print(udp_server_addr, udp_server_port)
-    print(http_server_addr, http_server_port)
-
     l_logger = Logger("tpc_launch", log_file)
+
+    l_logger.debug("Initaizing Signal Handlers")
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+
+    l_logger.info("Starting UDP client Thread")
     server_address = (udp_server_addr, int(udp_server_port))
-    udpclient_manager = UdpClientThread(server_address, l_logger)
-    udpclient_manager.start()
+    UDPCLIENT_MANAGER = UdpClientThread(server_address, l_logger)
+    UDPCLIENT_MANAGER.start()
+    LIST_OF_THREADS.append(UDPCLIENT_MANAGER)
+
+    l_logger.info("Starting HTTP server thread")
+    bind_address = (http_server_addr, int(http_server_port))
+    HTTPSERVER_MANAGER = HttpServerThread(bind_address, l_logger)
+    HTTPSERVER_MANAGER.start()
+    LIST_OF_THREADS.append(HTTPSERVER_MANAGER)
 
 if __name__ == "__main__":
     main()
