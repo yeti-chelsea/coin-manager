@@ -108,6 +108,8 @@ class UdpClientThread(threading.Thread):
         threading.Thread.__init__(self)
         self._logger_ref = logger_ref
         self._udp_client_interface = UdpSocket(server_addr)
+        self._thread_start = True
+        self._thread_runnung = True
 
     def run(self):
         '''
@@ -124,8 +126,6 @@ class UdpClientThread(threading.Thread):
             self._logger_ref.critical("Failed to send packet, server might not be running")
             sys.exit(1)
 
-        self._thread_start = True
-        self._thread_runnung = True
         while self._thread_runnung:
 
             try:

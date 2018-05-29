@@ -32,12 +32,12 @@ class HttpServerSocket(object):
         Wrapper to close the server socket
         '''
         self._socket.close()
- 
+
 class HttpServerThread(threading.Thread):
     '''
-    Thread responsible for receiving rest call and responding 
+    Thread responsible for receiving rest call and responding
     a json object
-    
+
     Following rest call are supported
     /rest/rproxy?mine-coin=<coin-name>
     /rest/rproxy?stop-mining=
@@ -49,10 +49,11 @@ class HttpServerThread(threading.Thread):
         self._logger_ref = logger_ref
         self.http_server_socket = HttpServerSocket(bind_addr)
         self._logger_ref.debug("Initalizing HTTP socket")
+        self._thread_start = True
+        self._thread_runnung = False
 
     def run(self):
         self._logger_ref.debug("Starting HTTP server")
-        self._thread_start = True
         self._thread_runnung = True
         while self._thread_runnung:
             try:
@@ -64,11 +65,11 @@ class HttpServerThread(threading.Thread):
             print("Received connection from client : ", client_addr)
             data = client_socket.recv(1024)
             #print(data.decode())
-            o = urlparse(data.decode())
-            print("Compelte : ", o)
-            print("Path", o.path[1])
-            print("Query", o.query)
-            print("Param", o.params)
+            url_data = urlparse(data.decode())
+            print("Compelte : ", url_data)
+            print("Path", url_data.path[1])
+            print("Query", url_data.query)
+            print("Param", url_data.params)
             response = "Accepted"
             client_socket.sendall(response.encode())
             client_socket.close()
