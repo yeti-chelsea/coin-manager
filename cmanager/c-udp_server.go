@@ -77,7 +77,7 @@ func (udp *UdpServer) InitInterCommChannels(requestReceiveChl <-chan []byte, res
 
 func (udp *UdpServer) HttpCommGopher() {
 
-	udp.Log_ref.Debug("Starting gopher for communicating with UDP server")
+	udp.Log_ref.Info("Starting gopher for communicating with UDP server")
 
 	for {
 		msg_bytes := <-udp.RequestReceiveFromHttp

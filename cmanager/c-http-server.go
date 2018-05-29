@@ -7,6 +7,7 @@ import (
 	"time"
 	"encoding/json"
 	"io/ioutil"
+	"fmt"
 )
 
 type myHandlers func(http.ResponseWriter, *http.Request)
@@ -63,12 +64,12 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	http_s.Log_ref.Debug("Received request for serving locally : ", r.URL.RawQuery)
 
 	supportedCurlRequest := []string {
-		"miner-ip=",
-		"miner-coins=",
-		"miner-daemons=",
-		"stop-mining=",
-		"mine-log=",
-		"mine-coin=" }
+		"miner-ip",
+		"miner-coins",
+		"miner-daemons",
+		"stop-mining",
+		"mine-log",
+		"mine-coin" }
 
 	responseToClient := []byte("Unsupported-Query")
 
