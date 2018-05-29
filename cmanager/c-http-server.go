@@ -7,7 +7,6 @@ import (
 	"time"
 	"encoding/json"
 	"io/ioutil"
-	"fmt"
 )
 
 type myHandlers func(http.ResponseWriter, *http.Request)

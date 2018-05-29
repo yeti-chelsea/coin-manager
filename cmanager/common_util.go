@@ -1,19 +1,19 @@
 package cmanager
 
 type MIps struct {
-	Ips []string `json:REGISTERED_MINER_IP`
+	Ips []string `json:"miner-ip"`
 }
 
 type MDaemons struct {
-	Daemons []string `json:REGISTERED_MINER_DAEMONS`
+	Daemons []string `json:"miner-daemons"`
 }
 
 type MCoins struct {
-	Coins []string `json:REGISTERED_MINER_COINS`
+	Coins []string `json:"miner-coins"`
 }
 
 type AllMinerInfo struct {
-	Ip string `json:REGISTERED_MINER_IP`
-	Daemons []string `json:REGISTERED_MINER_DAEMONS`
-	Coins []string `json:REGISTERED_MINER_COINS`
+	Ip string `json:"miner-ip"`
+	Daemons []string `json:"miner-daemons"`
+	Coins []string `json:"miner-coins"`
 }

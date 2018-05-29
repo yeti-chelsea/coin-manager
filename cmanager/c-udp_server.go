@@ -114,6 +114,7 @@ func (udp *UdpServer) HttpCommGopher() {
 				for i, val := range mStack.MinerDaemons.Daemons {
 					allMinerInfos[index].Daemons[i] = val
 				}
+				index = index + 1
 			}
 
 			byte_data, _ := json.Marshal(allMinerInfos)
@@ -129,8 +130,9 @@ func (udp *UdpServer) HttpCommGopher() {
 
 				allMinerInfos[index].Coins = make([]string, len(mStack.MinerCoins.Coins))
 				for i, val := range mStack.MinerCoins.Coins {
-					allMinerInfos[index].Daemons[i] = val
+					allMinerInfos[index].Coins[i] = val
 				}
+				index = index + 1
 			}
 
 			byte_data, _ := json.Marshal(allMinerInfos)
