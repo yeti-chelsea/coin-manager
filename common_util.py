@@ -164,8 +164,8 @@ def start_mining(mine_coin):
     Method to start mining
     '''
 
-    if len(check_miner_running_status()) < 1:
-        return "Miner daemon not running"
+    if len(check_miner_running_status()) > 1:
+        return "Miner daemon already running"
 
     miner_daemon = ""
     m_daemon_coin = get_miner_coin_and_daemon()
