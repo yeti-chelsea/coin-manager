@@ -203,17 +203,17 @@ def start_mining(mine_coin):
         config_file = CONFIG_XMR_PATH + mine_coin + '_pool.txt'
         any_config = CONFIG_XMR_PATH + 'any_config.txt'
         any_cpu = CONFIG_XMR_PATH + 'any_cpu.txt'
-        daemon_cmd_line_option = ' -c ' + config_file + ' -C ' + any_config + ' --cpu ' + any_cpu
+        daemon_cmd_line_option = ' -c ' + any_config + ' -C ' + config_file + ' --cpu ' + any_cpu
     elif miner_daemon == 'ipbc':
         config_file = CONFIG_IPBC_PATH + 'ipbc_pool.txt'
         any_config = CONFIG_IPBC_PATH + 'any_config.txt'
         any_cpu = CONFIG_IPBC_PATH + 'any_cpu.txt'
-        daemon_cmd_line_option = ' -c ' + config_file + ' -C ' + any_config + ' --cpu ' + any_cpu
+        daemon_cmd_line_option = ' -c ' + any_config + ' -C ' + config_file + ' --cpu ' + any_cpu
     elif miner_daemon == 'webchain':
         config_file = CONFIG_IPBC_PATH + 'webchain_pool.txt'
         any_config = CONFIG_WEBCHAIN_PATH + 'any_config.txt'
         any_cpu = CONFIG_WEBCHAIN_PATH + 'any_cpu.txt'
-        daemon_cmd_line_option = ' -c ' + config_file + ' -C ' + any_config + ' --cpu ' + any_cpu
+        daemon_cmd_line_option = ' -c ' + any_config + ' -C ' + config_file + ' --cpu ' + any_cpu
     else:
         return "Miner config not found"
 

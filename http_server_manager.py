@@ -8,6 +8,7 @@ import socket
 import threading
 import time
 from urllib.parse import urlparse
+import common_util
 
 SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin"]
 
@@ -88,6 +89,7 @@ class HttpServerThread(threading.Thread):
             path = url_data.path.split(' ')[1]
             query = url_data.query.split(' ')[0]
 
+            self._logger_ref.debug("Path : ", path)
             if path != "/rest/rproxy":
                 self._logger_ref.warning("Unsupported path")
                 response = "Unsupported url path"
@@ -95,6 +97,7 @@ class HttpServerThread(threading.Thread):
                 client_socket.close()
                 continue
 
+            self._logger_ref.debug("Query : ", query)
             mine_query = ""
             if query.find('=') != -1:
                 mine_query = query
@@ -106,6 +109,7 @@ class HttpServerThread(threading.Thread):
                     supported_query = True
 
             if supported_query == False:
+                self._logger_ref.warning("Unsupported Query : ", data.decode())
                 response = "Unsupported Query"
                 client_socket.sendall(response.encode())
                 client_socket.close()
@@ -113,7 +117,7 @@ class HttpServerThread(threading.Thread):
 
             if len(mine_query) > 1:
                 response = do_action(query, mine_query.split('=')[1])
-            else
+            else:
                 response = do_action(query)
 
             client_socket.sendall(response.encode())
