@@ -120,6 +120,17 @@ def check_miner_running_status():
     svsdem_cmdline_options = "xargs -0 < /proc/" + svsdem_pid + "/cmdline"
     return cmdline(svsdem_cmdline_options).decode().rstrip("\n")
 
+def get_current_coin():
+    '''
+    Get current coin which is mining
+    '''
+    mine_status = check_miner_running_status()
+    if len(mine_status) < 1:
+        return "Miner daemon not running"
+
+    return mine_status
+
+
 def stop_mining():
     '''
     method to stop mining
@@ -152,6 +163,9 @@ def start_mining(mine_coin):
     '''
     Method to start mining
     '''
+
+    if len(check_miner_running_status()) < 1:
+        return "Miner daemon not running"
 
     miner_daemon = ""
     m_daemon_coin = get_miner_coin_and_daemon()

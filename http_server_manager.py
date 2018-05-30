@@ -11,10 +11,20 @@ from urllib.parse import urlparse
 
 SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin"]
 
-def do_action():
+def do_action(query, coin = "" ):
     '''
-
+    Method to execute the query
     '''
+    if query == "stop-mining":
+        return common_util.stop_mining()
+    elif query == "mine-log":
+        return common_util.get_mine_log()
+    elif query == "mine-coin":
+        return common_util.start_mining(coin)
+    elif query == "current-mine-coin":
+        return common_util.get_current_coin()
+    else:
+        return "Query not supported"
 
 class HttpServerSocket(object):
     '''
@@ -101,7 +111,11 @@ class HttpServerThread(threading.Thread):
                 client_socket.close()
                 continue
 
-            response = "Success"
+            if len(mine_query) > 1:
+                response = do_action(query, mine_query.split('=')[1])
+            else
+                response = do_action(query)
+
             client_socket.sendall(response.encode())
             client_socket.close()
 
