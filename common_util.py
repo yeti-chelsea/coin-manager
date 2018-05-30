@@ -4,7 +4,6 @@ This file contains all the common functions
 
 import os
 import json
-import sys
 from subprocess import PIPE, Popen
 
 MINER_DAEMON_PATH = "/opt/cypto"
@@ -139,7 +138,7 @@ def stop_mining():
     if len(check_miner_running_status()) < 1:
         return "Miner daemon not running"
 
-    command_to_stop_mining = 'kill -9 pidof ' + MINER_PROCESS_NAME
+    command_to_stop_mining = 'kill -9 ' + '`pidof ' + MINER_PROCESS_NAME + '`'
     cmdline(command_to_stop_mining)
     return "Success"
 
@@ -150,8 +149,8 @@ def get_mine_log():
     if os.path.isfile(MINER_LOG_FILE):
         strings_list = ['' for i in range(10)]
 
-        with open(MINER_LOG_FILE, 'r') as f:
-            for line in f:
+        with open(MINER_LOG_FILE, 'r') as file_ptr:
+            for line in file_ptr:
                 strings_list.pop(0)
                 strings_list.append(line)
 
@@ -177,10 +176,10 @@ def start_mining(mine_coin):
                 miner_daemon = key
                 mine_coin_found = True
                 break
-        if mine_coin_found == True:
+        if mine_coin_found:
             break
 
-    if mine_coin_found == False:
+    if not mine_coin_found:
         return "Coin not supported"
 
     miner_daemon_path = ""
@@ -221,4 +220,3 @@ def start_mining(mine_coin):
     print(final_cmd)
     cmdline(final_cmd)
     return "Success"
-

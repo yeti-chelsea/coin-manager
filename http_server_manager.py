@@ -10,7 +10,7 @@ import time
 from urllib.parse import urlparse
 import common_util
 
-SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin"]
+SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin", "supported-query"]
 
 def do_action(query, coin = "" ):
     '''
@@ -111,6 +111,15 @@ class HttpServerThread(threading.Thread):
             if supported_query == False:
                 self._logger_ref.warning("Unsupported Query : ", data.decode())
                 response = "Unsupported Query"
+                client_socket.sendall(response.encode())
+                client_socket.close()
+                continue
+
+            if query == "supported-query":
+                response = '/rest/rproxy?mine-coin=<coin-name>\n \
+                        /rest/rproxy?stop-mining=\n \
+                        /rest/rporxy?mine-log=\n \
+                        /rest/rporxy?current-mine-coin\n'
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 continue
