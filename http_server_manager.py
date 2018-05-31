@@ -117,9 +117,9 @@ class HttpServerThread(threading.Thread):
 
             if query == "supported-query":
                 response = '/rest/rproxy?mine-coin=<coin-name>\n \
-                        /rest/rproxy?stop-mining=\n \
-                        /rest/rporxy?mine-log=\n \
-                        /rest/rporxy?current-mine-coin\n'
+                        \r/rest/rproxy?stop-mining=\n \
+                        \r/rest/rporxy?mine-log=\n \
+                        \r/rest/rporxy?current-mine-coin\n'
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 continue

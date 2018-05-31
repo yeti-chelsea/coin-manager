@@ -36,19 +36,27 @@ type HttpServer struct {
 
 func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- []byte) {
 
-	url := "http://" + minerHost
-	payload := strings.NewReader(request)
+	url := "http://" + strings.Split(minerHost, ":")[0] + ":6767" + "/rest/rproxy?" + request
 
-	req, _ := http.NewRequest("POST", url, payload)
-	req.Header.Add("cache-control", "no-cache")
+    http_s.Log_ref.Debug("URL : ", url)
 
-	res, _ := http.DefaultClient.Do(req)
-	defer res.Body.Close()
+    res, err := http.Get(url)
+    if err != nil {
+        http_s.Log_ref.Warning(err)
+        minerResponse<- []byte{0}
+        return
+    }
 
-	body, _ := ioutil.ReadAll(res.Body)
+    body, err := ioutil.ReadAll(res.Body)
+    res.Body.Close()
+    if err != nil {
+        http_s.Log_ref.Warning(err)
+        minerResponse<- body
+        return
+    }
 
-	minerResponse<- body
-
+    http_s.Log_ref.Debug("Response received from client : ", minerHost, string(body))
+    minerResponse<- body
 }
 
 func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +112,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
 		mIps := MIps{}
-		json.Unmarshal(minerIpsbyteFormat, mIps)
+		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
 		for _, reg_ips := range mIps.Ips {
 			res_from_miner := make(chan []byte, 1)
@@ -122,11 +130,11 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		coin := strings.Split(arg2, "?")[1]
 
 		http_s.Log_ref.Debug("Requesting for all miner ips")
-		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + mineIp)
+		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + "all")
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
 		mIps := MIps{}
-		json.Unmarshal(minerIpsbyteFormat, mIps)
+		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
 		for _, reg_ips := range mIps.Ips {
 			res_from_miner := make(chan []byte, 1)
