@@ -12,7 +12,7 @@ import common_util
 
 SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin", "supported-query"]
 
-def do_action(query, coin = "" ):
+def do_action(query, coin=""):
     '''
     Method to execute the query
     '''
@@ -66,7 +66,7 @@ class HttpServerThread(threading.Thread):
     def __init__(self, bind_addr, logger_ref):
         threading.Thread.__init__(self)
         self._logger_ref = logger_ref
-        
+
         self.http_server_socket = HttpServerSocket(bind_addr)
         self._logger_ref.debug("Initalizing HTTP socket")
         self._thread_start = True
@@ -108,7 +108,7 @@ class HttpServerThread(threading.Thread):
                 if query in qry:
                     supported_query = True
 
-            if supported_query == False:
+            if not supported_query:
                 self._logger_ref.warning("Unsupported Query : ", data.decode())
                 response = "Unsupported Query"
                 client_socket.sendall(response.encode())

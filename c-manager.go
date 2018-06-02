@@ -86,7 +86,6 @@ func main() {
 	}
 
 	logger := cmanager.Logger{}
-
 	if logger.InitLogger(filePtr, cmanager.LOG_LEVEL(cmd_ln.logLevel)) == false {
 		os.Exit(1)
 	}
@@ -109,7 +108,7 @@ func main() {
 		interCommChannels[index] = make(chan []byte, 1)
 	}
 
-    udpServer := cmanager.UdpServer{}
+	udpServer := cmanager.UdpServer{}
 
 	logger.Debug("Initalizing UDP server")
 	err = udpServer.Init(listenIp, cmd_ln.udpServerPortNumber, &logger)
@@ -124,7 +123,6 @@ func main() {
 
 	logger.Info("Starting UDP server")
 	udpServer.Start(doneChannels[0])
-
 
 	httpServer := cmanager.HttpServer{}
 	logger.Debug("Initalizing HTTP server")

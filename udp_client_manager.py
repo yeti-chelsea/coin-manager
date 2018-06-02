@@ -64,7 +64,7 @@ class UdpClientThread(threading.Thread):
         self._logger_ref.info("Starting thread...")
         # Initial Basic info initiated by client
 
-        self._logger_ref.debug("Sending Basic info")
+        self._logger_ref.debug("Sending Hello message to the server")
         bytes_sent = self._udp_client_interface.udp_send(HELLO_MSG)
 
         if bytes_sent < 1:
@@ -82,44 +82,46 @@ class UdpClientThread(threading.Thread):
             except socket.error:
                 self._logger_ref.error("Socket exception error")
                 sys.exit(1)
+
+            # Data came on wire will be in byte format
+            actual_data = data[0].decode()
+
+            if len(actual_data) == 0:
+                self._logger_ref.warning("Server has shutdown")
+                sys.exit(0)
+
+            self._logger_ref.debug("Receivied message : ", actual_data)
+
+            if actual_data == KEEP_ALIVE:
+                self._logger_ref.debug("Responding to keep alive.")
+                self._udp_client_interface.udp_send("i-m-alive")
+
+            elif actual_data == SEND_BASIC:
+                self._logger_ref.debug("Resending basic info")
+                bytes_sent = self._udp_client_interface.udp_send("Hello")
+                if bytes_sent < 1:
+                    self._logger_ref. \
+                        critical("Failed to send packet, server might not be running")
+                    sys.exit(1)
+
+            elif actual_data == MINER_DAEMONS:
+                self._logger_ref.debug("Sending Miner Daemons Info")
+                bytes_sent = \
+                self._udp_client_interface.udp_send(common_util.get_miner_daemons_json())
+
+            elif actual_data == MINER_COINS:
+                self._logger_ref.debug("Sending Coins supported by miners")
+                bytes_sent = \
+                self._udp_client_interface.udp_send(common_util.get_miner_coins_json())
+
+            elif actual_data == ACK_HELLO_MSG:
+                self._logger_ref.debug("Waiting for server to send the request")
+
             else:
-                actual_data = data[0].decode()
-
-                if len(actual_data) == 0:
-                    self._logger_ref.warning("Server has shutdown")
-                    sys.exit(0)
-
-                self._logger_ref.debug("Recevied message : ", actual_data)
-
-                if actual_data == KEEP_ALIVE:
-                    self._logger_ref.debug("Responding to keep alive.")
-                    self._udp_client_interface.udp_send("i-m-alive")
-
-                elif actual_data == SEND_BASIC:
-                    self._logger_ref.debug("Resending basic info")
-                    bytes_sent = self._udp_client_interface.udp_send("Hello")
-                    if bytes_sent < 1:
-                        self._logger_ref. \
-                            critical("Failed to send packet, server might not be running")
-                        sys.exit(1)
-
-                elif actual_data == MINER_DAEMONS:
-                    self._logger_ref.debug("Sending Miner Daemons Info")
-                    bytes_sent = \
-                    self._udp_client_interface.udp_send(common_util.get_miner_daemons_json())
-
-                elif actual_data == MINER_COINS:
-                    self._logger_ref.debug("Sending Coins supported by miners")
-                    bytes_sent = \
-                    self._udp_client_interface.udp_send(common_util.get_miner_coins_json())
-
-                elif actual_data == ACK_HELLO_MSG:
-                    self._logger_ref.debug("Waiting for server to send the request")
-
-                else:
-                    self._logger_ref.warning("Unknown message received.")
+                self._logger_ref.warning("Unknown message received.")
 
         self._thread_start = False
+
     def stop(self):
         '''
         Stop the thread

@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	REGISTERED_MINER_IP string = "miner-ip"
-	REGISTERED_MINER_DAEMONS string = "miner-daemons"
-	REGISTERED_MINER_COINS string = "miner-coins"
+	REGISTERED_MINER_IP		string = "miner-ip"
+	REGISTERED_MINER_DAEMONS	string = "miner-daemons"
+	REGISTERED_MINER_COINS		string = "miner-coins"
 )

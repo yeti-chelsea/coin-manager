@@ -84,6 +84,7 @@ def get_miner_coin_and_daemon():
         final_dict[key] = list_of_coins
 
     return final_dict
+
 def get_miner_daemons_json():
     '''
     Get the miner daemons in json format
@@ -217,6 +218,5 @@ def start_mining(mine_coin):
         return "Miner config not found"
 
     final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
-    print(final_cmd)
     cmdline(final_cmd)
     return "Success"
