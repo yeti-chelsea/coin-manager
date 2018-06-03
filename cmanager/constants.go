@@ -7,6 +7,7 @@ const (
 	SEND_BASIC    string = "Send-Basic"
 	MINER_DAEMONS string = "Miner-Daemons"
 	MINER_COINS   string = "Miner-Coins"
+	HOST_NAME     string = "Host-Name"
 )
 
 const (
@@ -22,4 +23,5 @@ const (
 	REGISTERED_MINER_IP		string = "miner-ip"
 	REGISTERED_MINER_DAEMONS	string = "miner-daemons"
 	REGISTERED_MINER_COINS		string = "miner-coins"
+	REGISTERED_MINER_HOST		string = "miner-host"
 )

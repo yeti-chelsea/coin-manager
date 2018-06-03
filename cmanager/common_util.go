@@ -4,6 +4,10 @@ type MIps struct {
 	Ips []string `json:"miner-ip"`
 }
 
+type MHosts struct {
+	HostName []string `json:"miner-host"`
+}
+
 type MDaemons struct {
 	Daemons []string `json:"miner-daemons"`
 }

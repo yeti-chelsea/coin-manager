@@ -68,6 +68,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	// "/rest/lserver?mine-coin=<all/miner-ip>?<coin>"
 	// "/rest/lserver?stop-mining=<all/miner-ip>"
 	// "/rest/lserver?mine-log=<all/miner-ip>
+	// "/rest/lserver?miner-host=all
 	http_s.Log_ref.Debug("Received request for serving locally : ", r.URL.RawQuery)
 
 	supportedCurlRequest := []string {
@@ -76,7 +77,8 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		"miner-daemons",
 		"stop-mining",
 		"mine-log",
-		"mine-coin" }
+		"mine-coin",
+		"miner-host" }
 
 	responseToClient := []byte("Unsupported-Query")
 
@@ -98,7 +100,8 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 
 	if arg1 == supportedCurlRequest[0] ||
 	arg1 == supportedCurlRequest[1] ||
-	arg1 == supportedCurlRequest[2] {
+	arg1 == supportedCurlRequest[2] ||
+	arg1 == supportedCurlRequest[6] {
 		http_s.Log_ref.Debug("Sending Request to UDP server")
 		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
 		responseToClient = <-http_s.RespnoseReceiveFromUdp
@@ -126,7 +129,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if arg1 == supportedCurlRequest[5] {
-		mineIp := strings.Split(arg2, "?")[0]
+		// mineIp := strings.Split(arg2, "?")[0]
 		coin := strings.Split(arg2, "?")[1]
 
 		http_s.Log_ref.Debug("Requesting for all miner ips")

@@ -17,6 +17,9 @@ type MinerStack struct {
 
 	// List of supported coins
 	MinerCoins *MCoins
+
+	// Host name
+	HostName string
 }
 
 type UdpServer struct {
@@ -102,6 +105,21 @@ func (udp *UdpServer) HttpCommGopher() {
 			byte_data, _ := json.Marshal(minerIps)
 			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
 			udp.SendResponseToHttp<- byte_data
+		} else if arg1 == REGISTERED_MINER_HOST {
+			numOfElements := len(udp.MapOfMiners)
+
+			minerHosts := MHosts{}
+			minerHosts.HostName = make([]string, numOfElements)
+
+			var index int = 0
+			for _, v := range udp.MapOfMiners {
+				minerHosts.HostName[index] = v.HostName
+				index = index + 1
+			}
+
+			byte_data, _ := json.Marshal(minerHosts)
+			udp.Log_ref.Debug("Sending response back to HTTP server : ", string(byte_data))
+			udp.SendResponseToHttp<- byte_data
 		} else if arg1 == REGISTERED_MINER_DAEMONS {
 			numOfElements := len(udp.MapOfMiners)
 			allMinerInfos := make([]AllMinerInfo, numOfElements)
@@ -159,6 +177,27 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	if err != nil {
 		udp.Log_ref.Error(err)
 	}
+
+	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
+
+	udp.Log_ref.Debug("Asking for Miner Hostname")
+	_, err = udp.ConnRef.WriteToUDP([]byte(HOST_NAME), client_addr)
+	if err != nil {
+		udp.Log_ref.Error(err)
+	}
+
+	select {
+	case chl_data_bytes = <-clientDataChl:
+		udp.Log_ref.Debug(fmt.Sprintf("Received message %s from %s", string(chl_data_bytes), client_addr))
+	case <-time.After(time.Duration(SEND_TIMEOUT_INSEC) * time.Second):
+		udp.Log_ref.Warning(fmt.Sprintf("UDP send timedout after waiting for %v seconds", SEND_TIMEOUT_INSEC))
+		delete(udp.MapOfMiners, client_addr.String())
+		udp.Log_ref.Warning("Ending this ghoper for client : ", client_addr.String())
+		return
+	}
+
+	minerStack.HostName = string(chl_data_bytes)
+	udp.Log_ref.Debug(minerStack.HostName)
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
 

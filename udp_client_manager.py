@@ -14,6 +14,7 @@ KEEP_ALIVE = "Keep-Alive"
 SEND_BASIC = "Send-Basic"
 MINER_DAEMONS = "Miner-Daemons"
 MINER_COINS = "Miner-Coins"
+HOST_NAME = "Host-Name"
 
 class UdpSocket(object):
     '''
@@ -116,6 +117,10 @@ class UdpClientThread(threading.Thread):
 
             elif actual_data == ACK_HELLO_MSG:
                 self._logger_ref.debug("Waiting for server to send the request")
+
+            elif actual_data == HOST_NAME:
+                self._logger_ref.debug("Sending host-name")
+                self._udp_client_interface.udp_send(socket.gethostname().encode())
 
             else:
                 self._logger_ref.warning("Unknown message received.")

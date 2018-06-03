@@ -11,10 +11,28 @@ import sys
 import time
 from copy import deepcopy
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import requests
 import paramiko
 from log_manager import Logger
 
 L_LOGGER_FILE = None
+
+def get_3_best_crypto():
+    '''
+    Method to get 3 best crypto-currency
+    '''
+    url = 'https://minecryptonight.net/api/rewards?hr=5000&limit=3'
+    json_data = requests.get(url).json()
+
+    best_crypto = []
+    for _, json_list in json_data.items():
+        if isinstance(json_list, list):
+            for items in json_list:
+                for key, val in items.items():
+                    if key == 'ticker_symbol':
+                        best_crypto.append(val)
+
+    return best_crypto
 
 class SshConnection(object):
     '''
@@ -65,7 +83,7 @@ class SshConnection(object):
         '''
         self.__ssh_client.close()
 
-def make_full_command(json_dictinary):
+def make_profile_push_command(json_dictinary):
     '''
     This method is responsible for making the complete
     command which will be executed in the remote machine
@@ -136,7 +154,7 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         for attr in loaded_json:
             profile_dict[attr] = loaded_json[attr]
 
-        cmd = make_full_command(profile_dict)
+        cmd = make_profile_push_command(profile_dict)
         L_LOGGER_FILE.info("Complete command to execute : ", cmd)
 
         h_name = ""
@@ -185,7 +203,6 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
                 self.client_address)
         # Write content as utf-8 data
         self.wfile.write(bytes(HTTPServerRequestHandler.ACK_MESSAGE, "utf8"))
-        return
 
 def run(port_number):
     '''
