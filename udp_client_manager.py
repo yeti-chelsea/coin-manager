@@ -120,7 +120,7 @@ class UdpClientThread(threading.Thread):
 
             elif actual_data == HOST_NAME:
                 self._logger_ref.debug("Sending host-name")
-                self._udp_client_interface.udp_send(socket.gethostname().encode())
+                self._udp_client_interface.udp_send(socket.gethostname())
 
             else:
                 self._logger_ref.warning("Unknown message received.")
