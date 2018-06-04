@@ -111,8 +111,10 @@ def make_profile_push_command(json_dictinary):
     for key, val in local_copy_json_dict.items():
         remaining_attr += "-" + str(key) + " " + str(val) + " "
 
+    comment_tag = " -comment \"Extras\" "
     full_cmd = screen_cmd +  " -dmSL" + " " + screen_name + " " + \
-            bash_option + " '" + tcl_path + " profilemgr " + remaining_attr + "'"
+            bash_option + " '" + tcl_path + " profilemgr " + remaining_attr + \
+            comment_tag + "'"
 
     return full_cmd
 
