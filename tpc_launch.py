@@ -46,18 +46,18 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGQUIT, signal_handler)
     signal.signal(signal.SIGHUP, signal_handler)
+    
+    l_logger.info("Starting HTTP server thread")
+    bind_address = (http_server_addr, int(http_server_port))
+    httpserver_manager = HttpServerThread(bind_address, l_logger)
+    httpserver_manager.start()
+    LIST_OF_THREADS.append(httpserver_manager)
 
     l_logger.info("Starting UDP client Thread")
     server_address = (udp_server_addr, int(udp_server_port))
     udpclient_manager = UdpClientThread(server_address, l_logger)
     udpclient_manager.start()
     LIST_OF_THREADS.append(udpclient_manager)
-
-    l_logger.info("Starting HTTP server thread")
-    bind_address = (http_server_addr, int(http_server_port))
-    httpserver_manager = HttpServerThread(bind_address, l_logger)
-    httpserver_manager.start()
-    LIST_OF_THREADS.append(httpserver_manager)
 
 if __name__ == "__main__":
     main()

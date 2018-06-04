@@ -120,30 +120,37 @@ def check_miner_running_status():
     svsdem_cmdline_options = "xargs -0 < /proc/" + svsdem_pid + "/cmdline"
     return cmdline(svsdem_cmdline_options).decode().rstrip("\n")
 
-def get_current_coin():
+def get_current_coin(logger_ref):
     '''
     Get current coin which is mining
     '''
     mine_status = check_miner_running_status()
     if len(mine_status) < 1:
+        logger_ref.info("Miner Daemon not running")
         return "Miner daemon not running"
 
+    logger_ref.info("Mining status : ", mine_status)
     return mine_status
 
 
-def stop_mining():
+def stop_mining(logger_ref):
     '''
     method to stop mining
     '''
 
     if len(check_miner_running_status()) < 1:
+        logger_ref.info("Miner Daemon not running")
         return "Miner daemon not running"
 
     command_to_stop_mining = 'kill -9 ' + '`pidof ' + MINER_PROCESS_NAME + '`'
-    cmdline(command_to_stop_mining)
+
+    logger_ref.info("Command to execute :", command_to_stop_mining)
+    status = cmdline(command_to_stop_mining)
+    logger_ref.info("Status of Command : ", status)
+
     return "Success"
 
-def get_mine_log():
+def get_mine_log(logger_ref):
     '''
     method to get miner logs
     '''
@@ -155,16 +162,19 @@ def get_mine_log():
                 strings_list.pop(0)
                 strings_list.append(line)
 
+        logger_ref.info(strings_list)
         return ''.join(strings_list)
     else:
+        logger_ref.info("Miner daemon not running not doing anything")
         return "Miner daemon not running"
 
-def start_mining(mine_coin):
+def start_mining(mine_coin, logger_ref):
     '''
     Method to start mining
     '''
 
     if len(check_miner_running_status()) > 1:
+        logger_ref.info("Miner daemon already running, not doing anything")
         return "Miner daemon already running"
 
     miner_daemon = ""
@@ -181,6 +191,7 @@ def start_mining(mine_coin):
             break
 
     if not mine_coin_found:
+        logger_ref.warning("Coin not supported")
         return "Coin not supported"
 
     miner_daemon_path = ""
@@ -193,6 +204,7 @@ def start_mining(mine_coin):
     elif miner_daemon == 'webchain':
         miner_daemon_path = MINER_DAEMON_WEBCHAIN
     else:
+        logger_ref.warning("No miner daemon present for the coin")
         return "No miner daemon present for the coin"
 
     daemon_cmd_line_option = ""
@@ -213,8 +225,12 @@ def start_mining(mine_coin):
         config_file = CONFIG_IPBC_PATH + 'webchain_config.json'
         daemon_cmd_line_option = ' -c ' + config_file
     else:
+        logger_ref.warning("Miner config not found for coin : ", mine_coin)
         return "Miner config not found"
 
     final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
-    cmdline(final_cmd)
+
+    logger_ref.debug("Command to start the mining : ", final_cmd)
+    status = cmdline(final_cmd)
+    logger_ref.debug("Status : ", status)
     return "Success"

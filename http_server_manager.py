@@ -12,18 +12,18 @@ import common_util
 
 SUPPORTED_QUERY = ["mine-coin", "stop-mining", "mine-log", "current-mine-coin", "supported-query"]
 
-def do_action(query, coin=""):
+def do_action(query, coin="", log_ref = None):
     '''
     Method to execute the query
     '''
     if query == "stop-mining":
-        return common_util.stop_mining()
+        return common_util.stop_mining(log_ref)
     elif query == "mine-log":
-        return common_util.get_mine_log()
+        return common_util.get_mine_log(log_ref)
     elif query == "mine-coin":
-        return common_util.start_mining(coin)
+        return common_util.start_mining(coin, log_ref)
     elif query == "current-mine-coin":
-        return common_util.get_current_coin()
+        return common_util.get_current_coin(log_ref)
     else:
         return "Query not supported"
 
@@ -125,9 +125,10 @@ class HttpServerThread(threading.Thread):
                 continue
 
             if len(mine_query) > 1:
-                response = do_action(query, mine_query.split('=')[1])
+                response = do_action(query, coin = mine_query.split('=')[1], \
+                        log_ref = self._logger_ref)
             else:
-                response = do_action(query)
+                response = do_action(query, log_ref = self._logger_ref)
 
             client_socket.sendall(response.encode())
             client_socket.close()
