@@ -32,6 +32,30 @@ type HttpServer struct {
 
 	// Channel for receiving Response from UDP server
 	RespnoseReceiveFromUdp <-chan []byte
+
+	// Preferred Coin
+	PreferredCoin string
+}
+
+func (http_s *HttpServer) ClientRegistered(registeredIp string) {
+	http_s.Log_ref.Info("Got a notification from UDP ClientRegistered : ", registeredIp)
+
+	if len(http_s.PreferredCoin) < 1 {
+		http_s.Log_ref.Debug("Preferred Coin not set.. Not doing anything")
+		return
+	}
+
+	res_from_miner := make(chan []byte, 1)
+
+	coin_to_mine := "mine-coin=" + http_s.PreferredCoin
+
+	go http_s.HttpClientRequest(registeredIp, coin_to_mine, res_from_miner)
+
+	<-res_from_miner
+}
+
+func (http_s *HttpServer) ClientUnregistered(unregisteredIp string) {
+	http_s.Log_ref.Info("Got a notification from UDP ClientUnregistered: ", unregisteredIp)
 }
 
 func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- []byte) {
@@ -131,6 +155,9 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	if arg1 == supportedCurlRequest[5] {
 		// mineIp := strings.Split(arg2, "?")[0]
 		coin := strings.Split(arg2, "?")[1]
+
+		http_s.Log_ref.Info("Setting preferred coin : ", coin)
+		http_s.PreferredCoin = coin
 
 		http_s.Log_ref.Debug("Requesting for all miner ips")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + "all")

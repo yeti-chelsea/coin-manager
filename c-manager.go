@@ -129,6 +129,7 @@ func main() {
 	httpServer.Init(listenIp, cmd_ln.httpServerPortNumber, &logger)
 
 	httpServer.InitInterCommChannels(interCommChannels[0], interCommChannels[1])
+	udpServer.RegisterListeners(&httpServer)
 
 	logger.Info("Starting HTTP server")
 	httpServer.Start(doneChannels[1])

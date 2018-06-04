@@ -43,9 +43,15 @@ type UdpServer struct {
 
 	// Channel for sending response to Http server
 	SendResponseToHttp chan<- []byte
+
+	// Registered Notifiers
+	ListOfMinerClientListeners []MinerClientNotifier
 }
 
+func (udp *UdpServer) RegisterListeners(listener MinerClientNotifier) {
 
+	udp.ListOfMinerClientListeners = append(udp.ListOfMinerClientListeners, listener)
+}
 
 func (udp *UdpServer) Init(listenIp string, listenPort int, logRef *Logger) error {
 	// Initalize the UDP server
@@ -242,6 +248,12 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 	udp.Log_ref.Debug(minerStack.MinerCoins)
 
 	time.Sleep(time.Duration(SLEEP_TIME_BEFORE_INTERACTING_INSEC) * time.Second)
+
+	udp.Log_ref.Debug("Notifying all the registered clients")
+	for _, listner := range udp.ListOfMinerClientListeners {
+		listner.ClientRegistered(client_addr.String())
+	}
+
 	var consecutiveKeepAliveTimeout int = 0
 	var consecutiveFailures int = 0
 	var breakout bool = false
@@ -281,6 +293,11 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 		if breakout {
 			break
 		}
+	}
+
+	udp.Log_ref.Debug("Notifying all the registered clients")
+	for _, listner := range udp.ListOfMinerClientListeners {
+		listner.ClientUnregistered(client_addr.String())
 	}
 
 	delete(udp.MapOfMiners, client_addr.String())

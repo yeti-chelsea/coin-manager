@@ -21,3 +21,8 @@ type AllMinerInfo struct {
 	Daemons []string `json:"miner-daemons"`
 	Coins []string `json:"miner-coins"`
 }
+
+type MinerClientNotifier interface {
+	ClientRegistered(registeredIp string)
+	ClientUnregistered(unregisteredIp string)
+}
