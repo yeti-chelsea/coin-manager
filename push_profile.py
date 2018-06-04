@@ -101,9 +101,9 @@ def make_profile_push_command(json_dictinary):
     tcl_path = ""
 
     if loc == "blr":
-        tcl_path = "/m/test_main/fwtest/bin/tcl"
+        tcl_path = "/m/rgowda_blr_lab/fwtest/bin/tcl"
     elif loc == "wtl":
-        tcl_path = "/m/test_main/fwtest/bin/tcl"
+        tcl_path = "/m/rgowda_lab/fwtest/bin/tcl"
     else:
         tcl_path = "/m/test_main/fwtest/bin/tcl"
 
