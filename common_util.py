@@ -198,7 +198,7 @@ def start_mining(mine_coin):
     daemon_cmd_line_option = ""
     if miner_daemon == 'cc':
         config_file = CONFIG_CC_PATH + mine_coin + '_config.json'
-        daemon_cmd_line_option = ' -c' + CONFIG_CC_PATH + config_file
+        daemon_cmd_line_option = ' -c' + config_file
     elif miner_daemon == 'xmr':
         config_file = CONFIG_XMR_PATH + mine_coin + '_pool.txt'
         any_config = CONFIG_XMR_PATH + 'any_config.txt'
@@ -210,10 +210,8 @@ def start_mining(mine_coin):
         any_cpu = CONFIG_IPBC_PATH + 'any_cpu.txt'
         daemon_cmd_line_option = ' -c ' + any_config + ' -C ' + config_file + ' --cpu ' + any_cpu
     elif miner_daemon == 'webchain':
-        config_file = CONFIG_IPBC_PATH + 'webchain_pool.txt'
-        any_config = CONFIG_WEBCHAIN_PATH + 'any_config.txt'
-        any_cpu = CONFIG_WEBCHAIN_PATH + 'any_cpu.txt'
-        daemon_cmd_line_option = ' -c ' + any_config + ' -C ' + config_file + ' --cpu ' + any_cpu
+        config_file = CONFIG_IPBC_PATH + 'webchain_config.json'
+        daemon_cmd_line_option = ' -c ' + config_file
     else:
         return "Miner config not found"
 
