@@ -129,7 +129,6 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		http_s.Log_ref.Debug("Sending Request to UDP server")
 		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
 		responseToClient = <-http_s.RespnoseReceiveFromUdp
-		http_s.Log_ref.Debug("Received response from UDP server : ", responseToClient)
 	}
 
 	if arg1 == supportedCurlRequest[3] ||
@@ -141,15 +140,21 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		mIps := MIps{}
 		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
-		for _, reg_ips := range mIps.Ips {
-			res_from_miner := make(chan []byte, 1)
-			go http_s.HttpClientRequest(reg_ips, arg1, res_from_miner)
+		if len(mIps.Ips) < 1 {
+			responseToClient = []byte("Preferred Coin set")
+		}else {
+			final_response := make([]string, len(mIps.Ips))
+			for index, reg_ips := range mIps.Ips {
+				res_from_miner := make(chan []byte, 1)
+				go http_s.HttpClientRequest(reg_ips, arg1, res_from_miner)
 
-			// TODO : Response must be multiplexed from all the gophers
-			responseToClient = <-res_from_miner
+				response := <-res_from_miner
+				final_response[index] = string(response)
+			}
+
+			responseToClientStr := strings.Join(final_response, "\n")
+			responseToClient = []byte(responseToClientStr)
 		}
-
-		http_s.Log_ref.Debug("Response sent  : ", responseToClient)
 	}
 
 	if arg1 == supportedCurlRequest[5] {
@@ -166,16 +171,24 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		mIps := MIps{}
 		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
-		for _, reg_ips := range mIps.Ips {
-			res_from_miner := make(chan []byte, 1)
-			go http_s.HttpClientRequest(reg_ips, arg1 + "=" + coin, res_from_miner)
+		if len(mIps.Ips) < 1 {
+			responseToClient = []byte("Preferred Coin set")
+		}else {
+			final_response := make([]string, len(mIps.Ips))
+			for index, reg_ips := range mIps.Ips {
+				res_from_miner := make(chan []byte, 1)
+				go http_s.HttpClientRequest(reg_ips, arg1 + "=" + coin, res_from_miner)
 
-			// TODO : Response must be multiplexed from all the gophers
-			responseToClient = <-res_from_miner
+				response := <-res_from_miner
+				final_response[index] = string(response)
+			}
+
+			responseToClientStr := strings.Join(final_response, "\n")
+			responseToClient = []byte(responseToClientStr)
 		}
-		http_s.Log_ref.Debug("Response sent  : ", responseToClient)
 	}
 
+	http_s.Log_ref.Debug("Response sent  : ", string(responseToClient))
 	w.Write(responseToClient)
 }
 

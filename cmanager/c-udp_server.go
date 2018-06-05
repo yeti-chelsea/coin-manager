@@ -251,7 +251,7 @@ func (udp *UdpServer) UdpClientGhoper(clientAddr <-chan *net.UDPAddr) {
 
 	udp.Log_ref.Debug("Notifying all the registered clients")
 	for _, listner := range udp.ListOfMinerClientListeners {
-		listner.ClientRegistered(client_addr.String())
+		go listner.ClientRegistered(client_addr.String())
 	}
 
 	var consecutiveKeepAliveTimeout int = 0
