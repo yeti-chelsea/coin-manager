@@ -13,6 +13,8 @@ import (
 
 const listenIp string = "0.0.0.0"
 
+var logger cmanager.Logger
+
 type CommandLineArgs struct {
 	udpServerPortNumber		int		// -u
 	httpServerPortNumber	int		// -t
@@ -52,18 +54,29 @@ func (cArgs *CommandLineArgs) ValidateArguments() {
 }
 
 func InitSignals() {
-	sigs := make(chan os.Signal, 1)
+	sigs_term := make(chan os.Signal, 1)
+	sigs_usr := make(chan os.Signal, 1)
 
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs_term, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs_usr, syscall.SIGUSR1)
 
 	go func() {
-		sig := <-sigs
-		fmt.Println("Received signal : ",sig)
+		sig := <-sigs_term
+		logger.Info(fmt.Println("Received signal : ",sig))
 
 		// TODO:This is a temporary implementation, ideally this should
 		// shutdown all the servers running
 		os.Exit(0)
 	}()
+
+	go func() {
+		for {
+			<-sigs_usr
+			logger.Info("Changing the log level")
+			logger.SetLogLevel()
+		}
+	}()
+
 }
 
 func main() {
@@ -85,7 +98,7 @@ func main() {
 		}
 	}
 
-	logger := cmanager.Logger{}
+	logger = cmanager.Logger{}
 	if logger.InitLogger(filePtr, cmanager.LOG_LEVEL(cmd_ln.logLevel)) == false {
 		os.Exit(1)
 	}

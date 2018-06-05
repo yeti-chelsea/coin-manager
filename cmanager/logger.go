@@ -73,3 +73,11 @@ func (lgr *Logger) Error(v ...interface{}) {
 		lgr.ERROR.Output(2, fmt.Sprint(v...))
 	}
 }
+
+func (lgr *Logger) SetLogLevel() {
+	if lgr.LogLevel != DEBUG_LEVEL {
+		lgr.LogLevel = INFO_LEVEL
+	}else {
+		lgr.LogLevel = DEBUG_LEVEL
+	}
+}
