@@ -20,8 +20,6 @@ def signal_handler(signalnum, stack):
     for thread_obj in LIST_OF_THREADS:
         thread_obj.stop()
 
-    sys.exit(0)
-
 def main():
     '''
     Main function
@@ -52,7 +50,9 @@ def main():
 
     l_logger.info("Starting HTTP server thread")
     bind_address = (http_server_addr, int(http_server_port))
-    HttpServer(bind_address, l_logger)
+    httpserver = HttpServer(bind_address, l_logger)
+    httpserver.start()
+    LIST_OF_THREADS.append(httpserver)
 
     l_logger.info("Starting UDP client Thread")
     server_address = (udp_server_addr, int(udp_server_port))

@@ -2,6 +2,8 @@
 Http server thread and socket
 '''
 
+import time
+import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import common_util
 
@@ -91,18 +93,51 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         '''
         Method to send back the response
         '''
+        self._logger_ref.debug("Sending : ", response)
+        self.send_response(200)
         self.wfile.write(bytes(response, "utf8"))
 
-class HttpServer(object): # pylint:disable=too-few-public-methods
+class HttpServer(threading.Thread): # pylint:disable=too-few-public-methods
     '''
     A wrapper for Base Http Request handler
     '''
     def __init__(self, bind_address, log_ref):
+        threading.Thread.__init__(self)
         def handler(*args):
             '''
             Handler function
             '''
             HTTPServerRequestHandler(log_ref, *args)
 
-        httpd = HTTPServer(bind_address, handler)
-        httpd.serve_forever()
+        self._logger_ref = log_ref
+        self._http = HTTPServer(bind_address, handler)
+        self._thread_start = True
+        self._thread_running = False
+
+    def run(self):
+        '''
+        Thread Run method
+        '''
+        self._thread_running = True
+        try:
+            self._http.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        except ValueError:
+            pass
+
+        self._thread_start = False
+
+    def stop(self):
+        '''
+        On Calling stop we would close the server socket
+        '''
+        self._logger_ref.info("Shutting down HTTP server")
+        self._thread_running = False
+
+        self._http.server_close()
+        
+        while self._thread_start:
+            time.sleep(1)
+
+        self._logger_ref.info("HTTP server Down")
