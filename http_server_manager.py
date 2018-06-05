@@ -2,8 +2,10 @@
 Http server thread and socket
 '''
 
+import socket
 import time
 import threading
+import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import common_util
 
@@ -45,14 +47,14 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         self._logger_ref.debug("Request Path : ", self.path)
 
         data = self.path
-        response = ""
+        response = socket.gethostname() + " : "
         path = data.split('?')[0]
         query = data.split('?')[1]
 
         self._logger_ref.debug("Path : ", path)
         if path != "/rest/rproxy":
             self._logger_ref.warning("Unsupported path")
-            response = "Unsupported url path"
+            response += "Unsupported url path"
             self._send_respose(response)
             return
 
@@ -69,12 +71,12 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
 
         if not supported_query:
             self._logger_ref.warning("Unsupported Query : ", data)
-            response = "Unsupported Query"
+            response += "Unsupported Query"
             self._send_respose(response)
             return
 
         if query == "supported-query":
-            response = '/rest/rproxy?mine-coin=<coin-name>\n \
+            response += '/rest/rproxy?mine-coin=<coin-name>\n \
                     \r/rest/rproxy?stop-mining=\n \
                     \r/rest/rporxy?mine-log=\n \
                     \r/rest/rporxy?current-mine-coin\n'
@@ -82,10 +84,10 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
             return
 
         if len(mine_query) > 1:
-            response = do_action(query, coin=mine_query.split('=')[1], \
+            response += do_action(query, coin=mine_query.split('=')[1], \
                     log_ref=self._logger_ref)
         else:
-            response = do_action(query, log_ref=self._logger_ref)
+            response += do_action(query, log_ref=self._logger_ref)
 
         self._send_respose(response)
 
@@ -95,7 +97,10 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         '''
         self._logger_ref.debug("Sending : ", response)
         self.send_response(200)
-        self.wfile.write(bytes(response, "utf8"))
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        json_string = json.dumps(response)
+        self.wfile.write(json_string.encode())
 
 class HttpServer(threading.Thread): # pylint:disable=too-few-public-methods
     '''
