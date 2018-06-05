@@ -93,6 +93,8 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	// "/rest/lserver?stop-mining=<all/miner-ip>"
 	// "/rest/lserver?mine-log=<all/miner-ip>
 	// "/rest/lserver?miner-host=all
+	// "/rest/lserver?supported-query=all
+	// "/rest/lserver?current-mine-coin=<all/miner-ip>
 	http_s.Log_ref.Debug("Received request for serving locally : ", r.URL.RawQuery)
 
 	supportedCurlRequest := []string {
@@ -132,7 +134,8 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if arg1 == supportedCurlRequest[3] ||
-	arg1 == supportedCurlRequest[4] {
+	arg1 == supportedCurlRequest[4] ||
+	arg1 == "current-mine-coin" {
 		http_s.Log_ref.Debug("Requesting for all miner ips")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + arg2)
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
@@ -186,6 +189,19 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 			responseToClientStr := strings.Join(final_response, "\n")
 			responseToClient = []byte(responseToClientStr)
 		}
+	}
+
+	if arg1 == "supported-query" {
+		var supportedQuery string
+		supportedQuery += "/rest/lserver?miner-ip=<all/miner-ip>\n" +
+		"\r/rest/lserver?miner-coins=<all/miner-ip>\n" +
+		"\r/rest/lserver?miner-daemons=<all/miner-ip>\n" +
+		"\r/rest/lserver?mine-coin=<all/miner-ip>?<coin>\n" +
+		"\r/rest/lserver?stop-mining=<all/miner-ip>\n" +
+		"\r/rest/lserver?mine-log=<all/miner-ip>\n" +
+		"\r/rest/lserver?miner-host=all\n" +
+		"\r/rest/lserver?current-mine-coin=<all/miner-ip>\n"
+		responseToClient = []byte(supportedQuery)
 	}
 
 	http_s.Log_ref.Debug("Response sent  : ", string(responseToClient))

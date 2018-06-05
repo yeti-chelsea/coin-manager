@@ -79,7 +79,7 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
             response += '/rest/rproxy?mine-coin=<coin-name>\n \
                     \r/rest/rproxy?stop-mining=\n \
                     \r/rest/rporxy?mine-log=\n \
-                    \r/rest/rporxy?current-mine-coin\n'
+                    \r/rest/rporxy?current-mine-coin=\n'
             self._send_respose(response)
             return
 

@@ -162,7 +162,6 @@ def get_mine_log(logger_ref):
                 strings_list.pop(0)
                 strings_list.append(line)
 
-        logger_ref.info(strings_list)
         return ''.join(strings_list)
     else:
         logger_ref.info("Miner daemon not running not doing anything")
@@ -210,7 +209,7 @@ def start_mining(mine_coin, logger_ref):
     daemon_cmd_line_option = ""
     if miner_daemon == 'cc':
         config_file = CONFIG_CC_PATH + mine_coin + '_config.json'
-        daemon_cmd_line_option = ' -c' + config_file
+        daemon_cmd_line_option = ' -c ' + config_file
     elif miner_daemon == 'xmr':
         config_file = CONFIG_XMR_PATH + mine_coin + '_pool.txt'
         any_config = CONFIG_XMR_PATH + 'any_config.txt'
