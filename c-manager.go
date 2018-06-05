@@ -58,11 +58,11 @@ func InitSignals() {
 	sigs_usr := make(chan os.Signal, 1)
 
 	signal.Notify(sigs_term, syscall.SIGINT, syscall.SIGTERM)
-	signal.Notify(sigs_usr, syscall.SIGUSR1)
+	signal.Notify(sigs_usr, syscall.SIGUSR1, syscall.SIGUSR2)
 
 	go func() {
-		sig := <-sigs_term
-		logger.Info(fmt.Println("Received signal : ",sig))
+		<-sigs_term
+		//logger.Info(cmanager.MAIN_LOGGER, fmt.Println("Received signal : ",sig))
 
 		// TODO:This is a temporary implementation, ideally this should
 		// shutdown all the servers running
@@ -71,9 +71,14 @@ func InitSignals() {
 
 	go func() {
 		for {
-			<-sigs_usr
-			logger.Info("Changing the log level")
-			logger.SetLogLevel()
+			sig := <-sigs_usr
+			if sig == syscall.SIGUSR1 {
+				logger.Info(cmanager.MAIN_LOGGER, "Changing the log level for UDP")
+				logger.ChangeLogLevel(cmanager.UDP_LOGGER)
+			}else {
+				logger.Info(cmanager.MAIN_LOGGER, "Changing the log level for HTTP")
+				logger.ChangeLogLevel(cmanager.HTTP_LOGGER)
+			}
 		}
 	}()
 
@@ -103,30 +108,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Debug("Initalizing signals")
+	logger.SetLogLevel(cmanager.MAIN_LOGGER, cmanager.INFO_LEVEL)
+
+	logger.Debug(cmanager.MAIN_LOGGER, "Initalizing signals")
 	InitSignals()
 
-	logger.Info("Starting Coin manager")
+	logger.Info(cmanager.MAIN_LOGGER, "Starting Coin manager")
 
 	var doneChannels [2]chan bool
 	var interCommChannels [2]chan []byte
 
-	logger.Debug("Creating channels")
+	logger.Debug(cmanager.MAIN_LOGGER, "Creating channels")
 	for index := range doneChannels {
 		doneChannels[index] = make(chan bool, 1)
 	}
 
-	logger.Debug("Creating Inter Communicating channels")
+	logger.Debug(cmanager.MAIN_LOGGER, "Creating Inter Communicating channels")
 	for index := range interCommChannels {
 		interCommChannels[index] = make(chan []byte, 1)
 	}
 
 	udpServer := cmanager.UdpServer{}
 
-	logger.Debug("Initalizing UDP server")
+	logger.Debug(cmanager.MAIN_LOGGER, "Initalizing UDP server")
 	err = udpServer.Init(listenIp, cmd_ln.udpServerPortNumber, &logger)
 	if err != nil {
-		logger.Error("Failed initalizing UDP server : ", err)
+		logger.Error(cmanager.MAIN_LOGGER, "Failed initalizing UDP server : ", err)
 		os.Exit(1)
 	}
 
@@ -134,24 +141,24 @@ func main() {
 
 	defer udpServer.ConnRef.Close()
 
-	logger.Info("Starting UDP server")
+	logger.Info(cmanager.MAIN_LOGGER, "Starting UDP server")
 	udpServer.Start(doneChannels[0])
 
 	httpServer := cmanager.HttpServer{}
-	logger.Debug("Initalizing HTTP server")
+	logger.Debug(cmanager.MAIN_LOGGER, "Initalizing HTTP server")
 	httpServer.Init(listenIp, cmd_ln.httpServerPortNumber, &logger)
 
 	httpServer.InitInterCommChannels(interCommChannels[0], interCommChannels[1])
 	udpServer.RegisterListeners(&httpServer)
 
-	logger.Info("Starting HTTP server")
+	logger.Info(cmanager.MAIN_LOGGER, "Starting HTTP server")
 	httpServer.Start(doneChannels[1])
 
 	// Wait for the Servers to complete
-	logger.Info("Wait for the Servers to complete")
+	logger.Info(cmanager.MAIN_LOGGER, "Wait for the Servers to complete")
 	for index := range doneChannels {
 		<-doneChannels[index]
 	}
 
-	logger.Info("Shutting down Coin manager")
+	logger.Info(cmanager.MAIN_LOGGER, "Shutting down Coin manager")
 }

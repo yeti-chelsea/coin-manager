@@ -22,6 +22,7 @@ type Logger struct {
     ERROR   *log.Logger
 
 	LogLevel LOG_LEVEL
+	LogLevels []LOG_LEVEL
 }
 
 func (lgr *Logger) InitLogger(file_ptr *io.Writer, level LOG_LEVEL) bool {
@@ -44,40 +45,45 @@ func (lgr *Logger) InitLogger(file_ptr *io.Writer, level LOG_LEVEL) bool {
 
 	lgr.LogLevel = level
 
+	lgr.LogLevels = make([]LOG_LEVEL, 3)
 	return true
 }
 
-func (lgr *Logger) Debug(v ...interface{}) {
-	if lgr.LogLevel >= DEBUG_LEVEL {
+func (lgr *Logger) SetLogLevel(log_chl int, level LOG_LEVEL) {
+	lgr.LogLevels[log_chl] = level
+}
+
+func (lgr *Logger) Debug(log_chl int, v ...interface{}) {
+	if lgr.LogLevels[log_chl] >= DEBUG_LEVEL {
 		lgr.DEBUG.Output(2, fmt.Sprint(v...))
 	}
 }
 
-func (lgr *Logger) Info(v ...interface{}) {
+func (lgr *Logger) Info(log_chl int, v ...interface{}) {
 
-	if lgr.LogLevel >= INFO_LEVEL {
+	if lgr.LogLevels[log_chl] >= INFO_LEVEL {
 		lgr.INFO.Output(2, fmt.Sprint(v...))
 	}
 }
 
-func (lgr *Logger) Warning(v ...interface{}) {
+func (lgr *Logger) Warning(log_chl int, v ...interface{}) {
 
-	if lgr.LogLevel >= WARNING_LEVEL {
+	if lgr.LogLevels[log_chl] >= WARNING_LEVEL {
 		lgr.WARNING.Output(2, fmt.Sprint(v...))
 	}
 }
 
-func (lgr *Logger) Error(v ...interface{}) {
+func (lgr *Logger) Error(log_chl int, v ...interface{}) {
 
-	if lgr.LogLevel >= ERROR_LEVEL {
+	if lgr.LogLevels[log_chl] >= ERROR_LEVEL {
 		lgr.ERROR.Output(2, fmt.Sprint(v...))
 	}
 }
 
-func (lgr *Logger) SetLogLevel() {
-	if lgr.LogLevel != DEBUG_LEVEL {
-		lgr.LogLevel = INFO_LEVEL
+func (lgr *Logger) ChangeLogLevel(log_chl int) {
+	if lgr.LogLevels[log_chl] != DEBUG_LEVEL {
+		lgr.LogLevels[log_chl] = DEBUG_LEVEL
 	}else {
-		lgr.LogLevel = DEBUG_LEVEL
+		lgr.LogLevels[log_chl] = INFO_LEVEL
 	}
 }

@@ -39,10 +39,10 @@ type HttpServer struct {
 }
 
 func (http_s *HttpServer) ClientRegistered(registeredIp string) {
-	http_s.Log_ref.Info("Got a notification from UDP ClientRegistered : ", registeredIp)
+	http_s.Log_ref.Info(HTTP_LOGGER, "Got a notification from UDP ClientRegistered : ", registeredIp)
 
 	if len(http_s.PreferredCoin) < 1 {
-		http_s.Log_ref.Debug("Preferred Coin not set.. Not doing anything")
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Preferred Coin not set.. Not doing anything")
 		return
 	}
 
@@ -56,18 +56,18 @@ func (http_s *HttpServer) ClientRegistered(registeredIp string) {
 }
 
 func (http_s *HttpServer) ClientUnregistered(unregisteredIp string) {
-	http_s.Log_ref.Info("Got a notification from UDP ClientUnregistered: ", unregisteredIp)
+	http_s.Log_ref.Info(HTTP_LOGGER, "Got a notification from UDP ClientUnregistered: ", unregisteredIp)
 }
 
 func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, minerResponse chan<- []byte) {
 
 	url := "http://" + strings.Split(minerHost, ":")[0] + ":6767" + "/rest/rproxy?" + request
 
-    http_s.Log_ref.Debug("URL : ", url)
+    http_s.Log_ref.Debug(HTTP_LOGGER, "URL : ", url)
 
     res, err := http.Get(url)
     if err != nil {
-        http_s.Log_ref.Warning(err)
+        http_s.Log_ref.Warning(HTTP_LOGGER, err)
         minerResponse<- []byte{0}
         return
     }
@@ -75,12 +75,12 @@ func (http_s *HttpServer) HttpClientRequest(minerHost string, request string, mi
     body, err := ioutil.ReadAll(res.Body)
     res.Body.Close()
     if err != nil {
-        http_s.Log_ref.Warning(err)
+        http_s.Log_ref.Warning(HTTP_LOGGER, err)
         minerResponse<- body
         return
     }
 
-    http_s.Log_ref.Debug("Response received from client : ", minerHost, string(body))
+    http_s.Log_ref.Debug(HTTP_LOGGER, "Response received from client : ", minerHost, string(body))
     minerResponse<- body
 }
 
@@ -96,7 +96,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	// "/rest/lserver?miner-host=all
 	// "/rest/lserver?supported-query=all
 	// "/rest/lserver?current-mine-coin=<all/miner-ip>
-	http_s.Log_ref.Debug("Received request for serving locally : ", r.URL.RawQuery)
+	http_s.Log_ref.Debug(HTTP_LOGGER, "Received request for serving locally : ", r.URL.RawQuery)
 
 	supportedCurlRequest := []string {
 		"miner-ip",
@@ -131,7 +131,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	arg1 == supportedCurlRequest[1] ||
 	arg1 == supportedCurlRequest[2] ||
 	arg1 == supportedCurlRequest[6] {
-		http_s.Log_ref.Debug("Sending Request to UDP server")
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Sending Request to UDP server")
 		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
 		responseToClient = <-http_s.RespnoseReceiveFromUdp
 	}
@@ -139,7 +139,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	if arg1 == supportedCurlRequest[3] ||
 	arg1 == supportedCurlRequest[4] ||
 	arg1 == "current-mine-coin" {
-		http_s.Log_ref.Debug("Requesting for all miner ips from UDP")
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Requesting for all miner ips from UDP")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + arg2)
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
@@ -150,11 +150,11 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 			final_response := make([]string, len(mIps.Ips))
 			for index, reg_ip := range mIps.Ips {
 				res_from_miner := make(chan []byte, 1)
-				http_s.Log_ref.Debug(fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
+				http_s.Log_ref.Debug(HTTP_LOGGER, fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
 				go http_s.HttpClientRequest(reg_ip, arg1, res_from_miner)
 
 				response := <-res_from_miner
-				http_s.Log_ref.Debug(fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
+				http_s.Log_ref.Debug(HTTP_LOGGER, fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
 				final_response[index] = string(response)
 			}
 
@@ -167,10 +167,10 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		// mineIp := strings.Split(arg2, "?")[0]
 		coin := strings.Split(arg2, "?")[1]
 
-		http_s.Log_ref.Info("Setting preferred coin : ", coin)
+		http_s.Log_ref.Info(HTTP_LOGGER, "Setting preferred coin : ", coin)
 		http_s.PreferredCoin = coin
 
-		http_s.Log_ref.Debug("Requesting for all miner ips from UDP")
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Requesting for all miner ips from UDP")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + "all")
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
@@ -178,17 +178,17 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
 		if len(mIps.Ips) < 1 {
-			http_s.Log_ref.Debug("No miner have registered yet, just setting preferred coin")
+			http_s.Log_ref.Debug(HTTP_LOGGER, "No miner have registered yet, just setting preferred coin")
 			responseToClient = []byte("Preferred Coin set")
 		}else {
 			final_response := make([]string, len(mIps.Ips))
 			for index, reg_ip := range mIps.Ips {
 				res_from_miner := make(chan []byte, 1)
-				http_s.Log_ref.Debug(fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
+				http_s.Log_ref.Debug(HTTP_LOGGER, fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
 				go http_s.HttpClientRequest(reg_ip, arg1 + "=" + coin, res_from_miner)
 
 				response := <-res_from_miner
-				http_s.Log_ref.Debug(fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
+				http_s.Log_ref.Debug(HTTP_LOGGER, fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
 				final_response[index] = string(response)
 			}
 
@@ -210,7 +210,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		responseToClient = []byte(supportedQuery)
 	}
 
-	http_s.Log_ref.Debug("Response sent  : ", string(responseToClient))
+	http_s.Log_ref.Debug(HTTP_LOGGER, "Response sent  : ", string(responseToClient))
 	w.Write(responseToClient)
 }
 
@@ -221,8 +221,8 @@ func (http_s *HttpServer) ProxyRequestHandler(w http.ResponseWriter, r *http.Req
 	// "/rest/rproxy?stop-mining"
 	// "/rest/rproxy?mine-log"
 
-	http_s.Log_ref.Debug("Received request for proxying")
-	http_s.Log_ref.Debug(r.URL.Path)
+	http_s.Log_ref.Debug(HTTP_LOGGER, "Received request for proxying")
+	http_s.Log_ref.Debug(HTTP_LOGGER, r.URL.Path)
 }
 
 func (http_s *HttpServer) AddHandlers(pattern string, handler myHandlers) {
@@ -232,16 +232,17 @@ func (http_s *HttpServer) AddHandlers(pattern string, handler myHandlers) {
 func (http_s *HttpServer) Init(listenIp string, listenPort int, logRef *Logger) {
 
 	http_s.Log_ref = logRef
+	http_s.Log_ref.SetLogLevel(HTTP_LOGGER, INFO_LEVEL)
 	multiplexer := http.NewServeMux()
 
 	http_s.Controller = make(map[string]myHandlers)
 
-	http_s.Log_ref.Debug("Initializing HTTP server")
+	http_s.Log_ref.Debug(HTTP_LOGGER, "Initializing HTTP server")
 	http_s.AddHandlers("/rest/lserver", http_s.LocalRequestHandler)
 	http_s.AddHandlers("/rest/rproxy", http_s.ProxyRequestHandler)
 
 	for pattern, request_handler := range http_s.Controller {
-		http_s.Log_ref.Debug("Registering handler with multiplexer : ", pattern)
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Registering handler with multiplexer : ", pattern)
 		multiplexer.HandleFunc(pattern, request_handler)
 	}
 
@@ -261,9 +262,9 @@ func (http_s *HttpServer) InitInterCommChannels(requestSendChl chan<- []byte, re
 
 func (http_s *HttpServer) Start(doneChannel chan<- bool) {
 
-	http_s.Log_ref.Info("Http server Listening on ", http_s.ServerRef.Addr)
+	http_s.Log_ref.Info(HTTP_LOGGER, "Http server Listening on ", http_s.ServerRef.Addr)
 	if err := http_s.ServerRef.ListenAndServe(); err != http.ErrServerClosed {
-		http_s.Log_ref.Error("Could not listen on specificed address : ", err)
+		http_s.Log_ref.Error(HTTP_LOGGER, "Could not listen on specificed address : ", err)
 	}
 
 	doneChannel <- true

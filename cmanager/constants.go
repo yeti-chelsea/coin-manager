@@ -25,3 +25,9 @@ const (
 	REGISTERED_MINER_COINS		string = "miner-coins"
 	REGISTERED_MINER_HOST		string = "miner-host"
 )
+
+const (
+	MAIN_LOGGER = 0
+	UDP_LOGGER = 1
+	HTTP_LOGGER = 2
+)
