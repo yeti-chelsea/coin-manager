@@ -7,6 +7,7 @@ import (
 	"time"
 	"encoding/json"
 	"io/ioutil"
+	"fmt"
 )
 
 type myHandlers func(http.ResponseWriter, *http.Request)
@@ -104,7 +105,9 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		"stop-mining",
 		"mine-log",
 		"mine-coin",
-		"miner-host" }
+		"miner-host",
+		"current-mine-coin",
+		"supported-query" }
 
 	responseToClient := []byte("Unsupported-Query")
 
@@ -136,22 +139,22 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	if arg1 == supportedCurlRequest[3] ||
 	arg1 == supportedCurlRequest[4] ||
 	arg1 == "current-mine-coin" {
-		http_s.Log_ref.Debug("Requesting for all miner ips")
+		http_s.Log_ref.Debug("Requesting for all miner ips from UDP")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + arg2)
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
 		mIps := MIps{}
 		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
-		if len(mIps.Ips) < 1 {
-			responseToClient = []byte("Preferred Coin set")
-		}else {
+		if len(mIps.Ips) >= 1 {
 			final_response := make([]string, len(mIps.Ips))
-			for index, reg_ips := range mIps.Ips {
+			for index, reg_ip := range mIps.Ips {
 				res_from_miner := make(chan []byte, 1)
-				go http_s.HttpClientRequest(reg_ips, arg1, res_from_miner)
+				http_s.Log_ref.Debug(fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
+				go http_s.HttpClientRequest(reg_ip, arg1, res_from_miner)
 
 				response := <-res_from_miner
+				http_s.Log_ref.Debug(fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
 				final_response[index] = string(response)
 			}
 
@@ -167,7 +170,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		http_s.Log_ref.Info("Setting preferred coin : ", coin)
 		http_s.PreferredCoin = coin
 
-		http_s.Log_ref.Debug("Requesting for all miner ips")
+		http_s.Log_ref.Debug("Requesting for all miner ips from UDP")
 		http_s.SendRequestToUdp<- []byte("miner-ip" + "=" + "all")
 		minerIpsbyteFormat := <-http_s.RespnoseReceiveFromUdp
 
@@ -175,14 +178,17 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 		json.Unmarshal(minerIpsbyteFormat, &mIps)
 
 		if len(mIps.Ips) < 1 {
+			http_s.Log_ref.Debug("No miner have registered yet, just setting preferred coin")
 			responseToClient = []byte("Preferred Coin set")
 		}else {
 			final_response := make([]string, len(mIps.Ips))
-			for index, reg_ips := range mIps.Ips {
+			for index, reg_ip := range mIps.Ips {
 				res_from_miner := make(chan []byte, 1)
-				go http_s.HttpClientRequest(reg_ips, arg1 + "=" + coin, res_from_miner)
+				http_s.Log_ref.Debug(fmt.Sprintf("Requesting client : %v for %v", reg_ip, arg1))
+				go http_s.HttpClientRequest(reg_ip, arg1 + "=" + coin, res_from_miner)
 
 				response := <-res_from_miner
+				http_s.Log_ref.Debug(fmt.Sprintf("Received response from client : %v : %v", reg_ip, string(response)))
 				final_response[index] = string(response)
 			}
 
