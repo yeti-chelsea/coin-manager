@@ -133,7 +133,9 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 	arg1 == supportedCurlRequest[6] {
 		http_s.Log_ref.Debug(HTTP_LOGGER, "Sending Request to UDP server")
 		http_s.SendRequestToUdp<- []byte(r.URL.RawQuery)
+
 		responseToClient = <-http_s.RespnoseReceiveFromUdp
+		http_s.Log_ref.Debug(HTTP_LOGGER, "Received response : ", string(responseToClient))
 	}
 
 	if arg1 == supportedCurlRequest[3] ||
@@ -160,6 +162,10 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 
 			responseToClientStr := strings.Join(final_response, "\n")
 			responseToClient = []byte(responseToClientStr)
+		}
+		else {
+			http_s.Log_ref.Debug(HTTP_LOGGER, "No Miner daemons registered yet")
+			responseToClient = []byte("No miner daemons registered")
 		}
 	}
 
