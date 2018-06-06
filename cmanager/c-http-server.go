@@ -162,8 +162,7 @@ func (http_s *HttpServer) LocalRequestHandler(w http.ResponseWriter, r *http.Req
 
 			responseToClientStr := strings.Join(final_response, "\n")
 			responseToClient = []byte(responseToClientStr)
-		}
-		else {
+		}else {
 			http_s.Log_ref.Debug(HTTP_LOGGER, "No Miner daemons registered yet")
 			responseToClient = []byte("No miner daemons registered")
 		}
