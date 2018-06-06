@@ -154,6 +154,10 @@ def get_mine_log(logger_ref):
     '''
     method to get miner logs
     '''
+    if len(check_miner_running_status()) < 1:
+        logger_ref.info("Miner Daemon not running")
+        return "Miner daemon not running"
+
     if os.path.isfile(MINER_LOG_FILE):
         strings_list = ['' for i in range(10)]
 
@@ -163,9 +167,6 @@ def get_mine_log(logger_ref):
                 strings_list.append(line)
 
         return ''.join(strings_list)
-    else:
-        logger_ref.info("Miner daemon not running not doing anything")
-        return "Miner daemon not running"
 
 def start_mining(mine_coin, logger_ref):
     '''
