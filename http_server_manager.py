@@ -37,6 +37,7 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         '''
         self._logger_ref = logger_ref
         BaseHTTPRequestHandler.__init__(self, *args)
+        _hostname = socket.gethostname() + " : "
 
     def do_GET(self): # pylint: disable=invalid-name
         '''
@@ -47,7 +48,7 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         self._logger_ref.debug("Request Path : ", self.path)
 
         data = self.path
-        response = socket.gethostname() + " : "
+        response = self._hostname
         path = data.split('?')[0]
         query = data.split('?')[1]
 
