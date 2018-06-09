@@ -235,11 +235,7 @@ def start_mining(mine_coin, logger_ref):
         logger_ref.warning("Miner config not found for coin : ", mine_coin)
         return "Miner config not found"
 
-    if miner_daemon != 'xmrig':
-        final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
-    else:
-        final_cmd = ' nohup ' + miner_daemon_path + daemon_cmd_line_option + ' &'
-
+    final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
 
     logger_ref.debug("Command to start the mining : ", final_cmd)
     status = cmdline(final_cmd)
