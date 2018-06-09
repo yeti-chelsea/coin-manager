@@ -11,11 +11,13 @@ MINER_PROCESS_NAME = "svsdem"
 MINER_LOG_FILE = "/var/tmp/m-svsde.log"
 MINER_DAEMON_CC = MINER_DAEMON_PATH + "/cc/bin/svsdem"
 MINER_DAEMON_XMR = MINER_DAEMON_PATH + "/xmr/bin/svsdem"
+MINER_DAEMON_XMRIG = MINER_DAEMON_PATH + "/xmrig/bin/svsdem"
 MINER_DAEMON_IPBC = MINER_DAEMON_PATH + "/ipbc/bin/svsdem"
 MINER_DAEMON_WEBCHAIN = MINER_DAEMON_PATH + "/webchain/bin/svsdem"
 
 CONFIG_CC_PATH = MINER_DAEMON_PATH + "/cc/etc/"
 CONFIG_XMR_PATH = MINER_DAEMON_PATH + "/xmr/etc/"
+CONFIG_XMRIG_PATH = MINER_DAEMON_PATH + "/xmrig/etc/"
 CONFIG_IPBC_PATH = MINER_DAEMON_PATH + "/ipbc/etc/"
 CONFIG_WEBCHAIN_PATH = MINER_DAEMON_PATH + "/webchain/etc/"
 
@@ -203,6 +205,8 @@ def start_mining(mine_coin, logger_ref):
         miner_daemon_path = MINER_DAEMON_IPBC
     elif miner_daemon == 'webchain':
         miner_daemon_path = MINER_DAEMON_WEBCHAIN
+    elif miner_daemon == 'xmrig':
+        miner_daemon_path = MINER_DAEMON_XMRIG
     else:
         logger_ref.warning("No miner daemon present for the coin")
         return "No miner daemon present for the coin"
@@ -224,11 +228,18 @@ def start_mining(mine_coin, logger_ref):
     elif miner_daemon == 'webchain':
         config_file = CONFIG_IPBC_PATH + 'webchain_config.json'
         daemon_cmd_line_option = ' -c ' + config_file
+    elif miner_daemon == 'xmrig':
+        config_file = CONFIG_XMRIG_PATH + mine_coin + '_config.json'
+        daemon_cmd_line_option = ' -c ' + config_file
     else:
         logger_ref.warning("Miner config not found for coin : ", mine_coin)
         return "Miner config not found"
 
-    final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
+    if miner_daemon != 'xmrig':
+        final_cmd = miner_daemon_path + daemon_cmd_line_option + ' >/dev/null 2>&1 &'
+    else:
+        final_cmd = ' nohup ' + miner_daemon_path + daemon_cmd_line_option + ' &'
+
 
     logger_ref.debug("Command to start the mining : ", final_cmd)
     status = cmdline(final_cmd)
