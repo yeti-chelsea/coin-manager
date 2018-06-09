@@ -50,7 +50,7 @@ func (lgr *Logger) InitLogger(file_ptr *io.Writer, level LOG_LEVEL) bool {
 }
 
 func (lgr *Logger) SetLogLevel(log_chl int, level LOG_LEVEL) {
-	lgr.LogLevels[log_chl] = level
+	lgr.LogLevels[log_chl] = lgr.LogLevel
 }
 
 func (lgr *Logger) Debug(log_chl int, v ...interface{}) {

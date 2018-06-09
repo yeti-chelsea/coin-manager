@@ -36,8 +36,8 @@ class HTTPServerRequestHandler(BaseHTTPRequestHandler): # pylint:disable=too-few
         Initalize the logger
         '''
         self._logger_ref = logger_ref
+        self._hostname = socket.gethostname() + " : "
         BaseHTTPRequestHandler.__init__(self, *args)
-        _hostname = socket.gethostname() + " : "
 
     def do_GET(self): # pylint: disable=invalid-name
         '''
