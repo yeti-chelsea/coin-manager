@@ -11,7 +11,7 @@ MINER_PROCESS_NAME = "svsdem"
 MINER_LOG_FILE = "/var/tmp/m-svsde.log"
 MINER_DAEMON_CC = MINER_DAEMON_PATH + "/cc/bin/svsdem"
 MINER_DAEMON_XMR = MINER_DAEMON_PATH + "/xmr/bin/svsdem"
-MINER_DAEMON_XMRIG = MINER_DAEMON_PATH + "/xmrig/bin/svsdem"
+MINER_DAEMON_XMRIG = MINER_DAEMON_PATH + "/xmrig/bin/xmrigDaemon"
 MINER_DAEMON_IPBC = MINER_DAEMON_PATH + "/ipbc/bin/svsdem"
 MINER_DAEMON_WEBCHAIN = MINER_DAEMON_PATH + "/webchain/bin/svsdem"
 
