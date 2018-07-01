@@ -6,33 +6,15 @@ A simple script which automates profile pushes
 
 import json
 import os
-import getopt
 import sys
 import time
+import getopt
 from copy import deepcopy
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import requests
 import paramiko
 from log_manager import Logger
 
 L_LOGGER_FILE = None
-
-def get_3_best_crypto():
-    '''
-    Method to get 3 best crypto-currency
-    '''
-    url = 'https://minecryptonight.net/api/rewards?hr=5000&limit=3'
-    json_data = requests.get(url).json()
-
-    best_crypto = []
-    for _, json_list in json_data.items():
-        if isinstance(json_list, list):
-            for items in json_list:
-                for key, val in items.items():
-                    if key == 'ticker_symbol':
-                        best_crypto.append(val)
-
-    return best_crypto
 
 class SshConnection(object):
     '''
